@@ -34,6 +34,7 @@ class Lox:
 	def run(self, program):
 		for token in program:
 			print(token, end='')
+		print()
 
 	
 	def error(self, line, err_msg):
