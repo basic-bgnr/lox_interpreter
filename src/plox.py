@@ -23,6 +23,7 @@ class Lox:
 
 		lox_interpreter = Lox()
 		lox_interpreter.run(source_code)
+		### add interpreter in prompt mode after this. if necessary arguments are passed
 
 	@staticmethod
 	def runPrompt():
@@ -47,3 +48,56 @@ class Lox:
 
 #run the program by calling the static function main of the interpreter
 Lox.main()
+
+
+
+from enum import Enum
+class TokenType(Enum):                                   
+  ##Single-character tokens.                      
+  LEFT_PAREN 
+  RIGHT_PAREN 
+  LEFT_BRACE 
+  RIGHT_BRACE
+  COMMA 
+  DOT 
+  MINUS 
+  PLUS 
+  SEMICOLON 
+  SLASH 
+  STAR 
+
+  ##One or two character tokens.                  
+  BANG 
+  BANG_EQUAL                                
+  EQUAL 
+  EQUAL_EQUAL                              
+  GREATER 
+  GREATER_EQUAL                          
+  LESS 
+  LESS_EQUAL                                
+
+  ##Literals.                                     
+  IDENTIFIER 
+  STRING 
+  NUMBER                      
+
+  ##Keywords.                                     
+  AND 
+  CLASS 
+  ELSE 
+  FALSE 
+  FUN 
+  FOR 
+  IF 
+  NIL 
+  OR  
+  PRINT
+  RETURN 
+  SUPER 
+  THIS 
+  TRUE 
+  VAR 
+  WHILE    
+
+  EOF
+                                  
