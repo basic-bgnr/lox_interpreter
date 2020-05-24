@@ -1,3 +1,4 @@
+
 def test(source_code = '{{(+)}}'):
 	scanner = Scanner(source_code)
 	scanner.scanTokens()
@@ -23,7 +24,7 @@ class Scanner:
 
 		#just for clarity
 		#below line is indicative of the end of the souce_code
-		self.addToken(TokenType.EOF)
+		self.addToken(TokenType.EOF, '')
 
 	def isAtEnd(self):
 		return self.current >= len(self.source_code)
@@ -31,34 +32,34 @@ class Scanner:
 	def scanToken(self):
 		lexeme = self.advance()
 		if (lexeme == TokenType.LEFT_PAREN.value):
-		 	self.addToken(TokenType.LEFT_PAREN)
+		 	self.addToken(TokenType.LEFT_PAREN, '')
 
 		elif (lexeme == TokenType.RIGHT_PAREN.value):
-			self.addToken(TokenType.RIGHT_PAREN)
+			self.addToken(TokenType.RIGHT_PAREN, '')
 
 		elif (lexeme == TokenType.LEFT_BRACE.value):
-			self.addToken(TokenType.LEFT_BRACE)
+			self.addToken(TokenType.LEFT_BRACE, '')
 
 		elif (lexeme ==TokenType.RIGHT_BRACE.value):
-			self.addToken(TokenType.RIGHT_BRACE)
+			self.addToken(TokenType.RIGHT_BRACE, '')
 
 		elif (lexeme == TokenType.COMMA.value):
-			self.addToken(TokenType.COMMA)
+			self.addToken(TokenType.COMMA, '')
 
 		elif (lexeme == TokenType.DOT.value):
-			self.addToken(TokenType.DOT)
+			self.addToken(TokenType.DOT, '')
 
 		elif (lexeme == TokenType.MINUS.value):
-			self.addToken(TokenType.MINUS)
+			self.addToken(TokenType.MINUS, '')
 
 		elif (lexeme == TokenType.PLUS.value):
-			self.addToken(TokenType.PLUS)
+			self.addToken(TokenType.PLUS, '')
 
 		elif (lexeme == TokenType.SEMICOLON.value):
-			self.addToken(TokenType.SEMICOLON)
+			self.addToken(TokenType.SEMICOLON, '')
 
 		elif (lexeme == TokenType.STAR.value):
-			self.addToken(TokenType.STAR)
+			self.addToken(TokenType.STAR, '')
 
 		elif (lexeme == TokenType.COMMENT.value):
 			#this is a comment and must be consumed till the end of line 
@@ -78,17 +79,66 @@ class Scanner:
 
 		#two character lexemes, here peek_and_match consumes the current token and forward if matched
 		elif (lexeme == TokenType.BANG):
-			self.addToken(TokenType.BANG_EQUAL) if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.BANG)
+			self.addToken(TokenType.BANG_EQUAL, '') if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.BANG, '')
 
 		elif (lexeme == TokenType.EQUAL):
-			self.addToken(TokenType.EQUAL_EQUAL) if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.EQUAL)
+			self.addToken(TokenType.EQUAL_EQUAL, '') if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.EQUAL, '')
 
 		elif (lexeme == TokenType.LESS.value):
-			self.addToken(TokenType.LESS_EQUAL) if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.LESS)
+			self.addToken(TokenType.LESS_EQUAL, '') if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.LESS, '')
 
 		elif (lexeme == TokenType.GREATER.value):
-			self.addToken(TokenType.GREATER_EQUAL) if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.GREATER)
+			self.addToken(TokenType.GREATER_EQUAL, '') if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.GREATER, '')
 
+		elif (lexeme == TokenType.STRING.value): # check if lexeme is equal to "
+			while True:
+				next_value = self.peek()
+				if (next_value == TokenType.EOF.value):
+					#print('eror')
+					#todo : log error to interpreter 
+					break
+				
+
+				if (next_value != TokenType.STRING.value): #check for closing " value 
+					if (next_value == TokenType.NEW_LINE.value): # allows multiline string but the edge condition is that we need to implicitly add line
+					    self.line += 1 # 
+
+					# start consuming the value 
+					self.advance() 
+					# here we don't need to keep track of what values we are consuming because we already have 
+					# specified the start and current variable which we can utilize to extract the consumed string from the source code
+				else:
+					string_value = self.source_code[self.start+1: self.current] #the startposition is at " so + 1 and self.current is at " so no adding since substring cause n-1 string to be included 
+					# print('parsed string ', string_value)
+					self.addToken(TokenType.STRING)
+					self.advance() #consume the string
+					break
+
+		elif (lexeme in TokenType.NUMBER.value):
+			####helper function ############################
+			def consume_digits():
+			#####consumes continuous digit without . with optional SEPARATOR
+				while (self.peek() in TokenType.NUMBER.value or self.peek() == TokenType.SEPARATOR.value): # the second and subsequent digit can be _
+					self.advance() # the current number is digit so consume it
+			###########################
+			def check_decimal():
+				if (self.peek() == TokenType.DOT.value and self.peek_next() in TokenType.NUMBER.value): #check for optional . and if present check if the next peeked value is also a number otherwise out `method` calling syntax won't work
+					self.advance()
+					return True
+				return False
+			#####helper function end #######################
+			
+			consume_digits() #before decimal 
+			if (check_decimal()):#######consumes digits after decimal with optional SEPARATOR
+				consume_digits() 
+
+			number_value = self.source_code[self.start:self.current].replace(TokenType.SEPARATOR.value, '')#replace occurrence of _ with void value
+			self.addToken(TokenType.NUMBER, float(number_value)) #here we can't rely on the automatic generator since there are items to be removed
+
+		elif (lexeme in TokenType.IDENTIFIER.value or lexeme == TokenType.SEPARATOR.value): # identifier can being with alphabet or _
+			while (self.peek() in TokenType.IDENTIFIER.value or self.peek() in TokenType.NUMBER.value or self.peek() in TokenType.SEPARATOR.value): #after first(alphabet or _) the remaining number can be (alphabet _ or numbers)
+				self.advance()
+			self.addToken(TokenType.IDENTIFIER)
 		else:
 			#self.had_error
 			#report the error to the interpreter but do not stop the parsing
@@ -106,6 +156,10 @@ class Scanner:
 	def peek(self):
 		return TokenType.EOF.value if self.isAtEnd() else self.source_code[self.current]
 
+	def peek_next(self):
+		return TokenType.EOF.value if len(self.source_code)<self.current+1 else self.source_code[self.current+1]
+	
+
 	def advance(self):
 		self.current += 1 
 		# the reason why we add first and subtract later is to use the substring fuction in the addtoken function 
@@ -114,18 +168,18 @@ class Scanner:
 		return self.source_code[self.current-1]
 
 	def addToken(self, token, literal=None):
+		##for string, number and identifier, literal is calculated automatically for all other explicit '' need to be added
 		#the following code return multicharacter lexeme, that's why start and current is required
 		#lexeme = self.source_code[self.start:self.current] if literal else literal #non printable character should have None as printable literal 
-		lexeme = self.source_code[self.start:self.current]
 		self.token_list.append(
 			Token(token, 
-				  lexeme,# the string corresponding to the token, it is necessary only for identifier other are redundant
-				  literal, 
+				  token.value,# the string corresponding to the token, it is necessary only for identifier other are redundant
+				  self.source_code[self.start:self.current] if literal==None  else literal,
 				  self.line)
 			)
 
 	def toString(self):
-		return '  '.join(map(lambda x: x.toString(), self.token_list))
+		return '\n'.join(map(lambda x: x.toString(), self.token_list))
 
 
 class Token:
@@ -136,7 +190,7 @@ class Token:
 		self.line = line
 
 	def toString(self):
-		return f'<{self.tipe} {self.lexeme} {self.literal} "{self.line}"''>'
+		return f"<TokenType: {self.tipe} | Lexeme: '{self.lexeme}' | Literal: '{self.literal}' | Line: {self.line}>"
 
 from enum import Enum, auto
 class TokenType(Enum):                                   
@@ -153,6 +207,7 @@ class TokenType(Enum):
   SLASH ='/'
   STAR = '*'
   NEW_LINE = '\n'
+  SEPARATOR = '_'
 
   #token to ignore
   TAB = '\t'
@@ -172,9 +227,9 @@ class TokenType(Enum):
   LESS_EQUAL = '>='                                
 
   ##Literals.                                     
-  IDENTIFIER  = auto()
-  STRING = auto()
-  NUMBER = auto()             
+  IDENTIFIER  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  STRING = '"' 
+  NUMBER = '0123456789'             
 
   ##Keywords.                                     
   AND = 'and'
