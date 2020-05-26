@@ -216,9 +216,9 @@ class Scanner:
 
 
 class Token:
-	def __init__(self, tipe, lexeme, literal, line):
+	def __init__(self, tipe, lexeme='', literal='', line=0):
 		self.tipe = tipe
-		self.lexeme = lexeme
+		self.lexeme = lexeme if lexeme else tipe.value
 		self.literal = literal
 		self.line = line
 
