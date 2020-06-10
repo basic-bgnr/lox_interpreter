@@ -44,6 +44,9 @@ class BinaryExpression:
 	def linkVisitor(self, visitor):
 		return visitor.visitBinaryExpression(self)
 
+	# def print(self):
+	# 	return f'({self.operator.lexeme} {self.left.print()} {self.right.print()})'
+
 class UnaryExpression:
 	def __init__(self, operator, right):
 		self.right =right
@@ -52,12 +55,18 @@ class UnaryExpression:
 	def linkVisitor(self, visitor):
 		return visitor.visitUnaryExpression(self)
 
+	# def print(self):
+	# 	return f'({self.operator.lexeme} {self.right.print()})'
+
 class GroupingExpression:
 	def __init__(self, expression):
 		self.expression = expression 
 
 	def linkVisitor(self, visitor):
 		return visitor.visitGroupingExpression(self)
+
+	# def print(self):
+	# 	return f'({self.expression.print()})'
 
 class LiteralExpression:
 	def __init__(self, value):
@@ -66,6 +75,8 @@ class LiteralExpression:
 	def linkVisitor(self, visitor):
 		return visitor.visitLiteralExpression(self)
 
+	# def print(self):
+	# 	return str(self.value)
 
 class ASTPrinter(ExpressionVisitor):
 
@@ -90,10 +101,10 @@ class ASTPrinter(ExpressionVisitor):
 
 	def parenthesize(self, operator, *expressions):
 		
-		recursive_values =  ''.join([expression.linkVisitor(self) for expression in expressions])
+		recursive_values =  ' '.join([expression.linkVisitor(self) for expression in expressions])
 		return f"({operator} {recursive_values})"
 
-def test():
+def test_printer():
 	from lexer import TokenType, Token
 
 	new_expr = BinaryExpression(
@@ -106,3 +117,101 @@ def test():
 	# new_expr = LiteralExpression(234)
 	print(ASTPrinter().print(new_expr))
 
+def test_lexer(source_code='2+2*2'):
+
+	scanner = Scanner(source_code)
+	scanner.scanTokens()
+	for tkn in scanner.token_list:
+		print(tkn.toString())
+
+	parser = Parser(scanner.token_list)
+	parser.parse()
+
+	print(ASTPrinter().print(parser.AST))
+	
+from lexer import TokenType, Scanner
+class Parser:
+	def __init__(self, token_list):
+		self.token_list = token_list
+		self.current = 0
+		self.interpreter = None
+		self.AST = None
+
+	def parse(self):
+		self.AST = self.parseExpr()
+
+	def parseExpr(self):
+		return self.comparisonExpr()
+
+	def comparisonExpr(self):
+		left_expr = self.additionExpr()
+
+		if  (self.peek().tipe in [TokenType.EQUAL_EQUAL, TokenType.BANG_EQUAL,
+			                      TokenType.GREATER, TokenType.GREATER_EQUAL,
+			                      TokenType.LESS, TokenType.LESS_EQUAL]):
+		    operator = self.advance() #consume the operator and move forward
+		    right_expr = self.comparisonExpr()
+		    return BinaryExpression(left_expr, operator, right_expr)
+		return left_expr
+
+	def additionExpr(self):
+		left_expr = self.multiplicationExpr()
+
+		if(self.peek().tipe in [TokenType.PLUS, TokenType.MINUS]):
+			operator = self.advance()
+			right_expr = self.additionExpr()
+			return BinaryExpression(left_expr, operator, right_expr)
+		
+		return left_expr
+
+		
+	def multiplicationExpr(self):
+		left_expr = self.unitaryExpr()
+		if (self.peek().tipe in [TokenType.STAR, TokenType.SLASH]):
+			operator = self.advance() #consume the operator
+			right_expr = self.multiplicationExpr()
+			return BinaryExpression(left_expr, operator, right_expr)
+		return left_expr
+
+
+	def unitaryExpr(self):
+		if (self.peek().tipe in [TokenType.BANG, TokenType.MINUS, TokenType.PLUS]):
+			operator = self.advance() # advance the operator
+			return UnaryExpression(operator, self.literalExpr())
+		
+		return self.literalExpr()
+
+	def literalExpr(self): # this needs to add support for bracketed expr or(group expression) as they have the same precedence as the literal number
+	    if (self.peek().tipe in [TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER]):
+	    	literal_expr = self.advance()
+	    	return LiteralExpression(literal_expr.literal)
+	    elif (self.peek().tipe == TokenType.LEFT_PAREN):
+	    	self.advance() # consume the '(' token
+	    	group_expr = self.comparisonExpr()
+	    	if (self.peek().tipe == TokenType.RIGHT_PAREN):
+	    		self.advance() # consume the ')' token
+	    		return group_expr
+	    	else:
+	    		print('error no matching parenthesis found')
+
+	def advance(self):
+		self.current += 1
+		return self.token_list[self.current - 1]
+
+	def reverse(self):
+		return self.token_list[self.current - 1]
+
+	def peek(self):
+		return self.token_list[self.current] if not self.isAtEnd() else TokenType.EOF
+
+	def peekAndMatch(self, match_token):
+		if (self.peek() == match_with_token):
+			self.advance()
+			return True
+		return False
+
+	def peekAndMatchMultiple(self, *match_tokens):
+		return any(map(self.peekAndMatch, match_tokens))
+
+	def isAtEnd(self):
+		return self.current >= len(self.token_list)#check the type of the end item
