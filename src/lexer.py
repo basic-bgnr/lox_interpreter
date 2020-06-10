@@ -13,6 +13,7 @@ class Scanner:
 		self.start = 0
 		self.current = 0
 		self.line   = 1
+		self.interpreter = None # to do add interpreter to the initialization code 
 
 	# def getTokenizedList(self):
 	# 	self.scanTokens()
@@ -82,18 +83,18 @@ class Scanner:
 			self.line += 1
 
 
-		#two character lexemes, here peek_and_match consumes the current token and forward if matched
-		elif (lexeme == TokenType.BANG):
-			self.addToken(TokenType.BANG_EQUAL, '') if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.BANG, '')
+		#two character lexemes, here peekAndMatch consumes the current token and forward if matched
+		elif (lexeme == TokenType.BANG.value):
+			self.addToken(TokenType.BANG_EQUAL, '') if self.peekAndMatch(TokenType.EQUAL.value) else self.addToken(TokenType.BANG, '')
 
-		elif (lexeme == TokenType.EQUAL):
-			self.addToken(TokenType.EQUAL_EQUAL, '') if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.EQUAL, '')
+		elif (lexeme == TokenType.EQUAL.value):
+			self.addToken(TokenType.EQUAL_EQUAL, '') if self.peekAndMatch(TokenType.EQUAL.value) else self.addToken(TokenType.EQUAL, '')
 
 		elif (lexeme == TokenType.LESS.value):
-			self.addToken(TokenType.LESS_EQUAL, '') if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.LESS, '')
+			self.addToken(TokenType.LESS_EQUAL, '') if self.peekAndMatch(TokenType.EQUAL.value) else self.addToken(TokenType.LESS, '')
 
 		elif (lexeme == TokenType.GREATER.value):
-			self.addToken(TokenType.GREATER_EQUAL, '') if self.peek_and_match(TokenType.EQUAL) else self.addToken(TokenType.GREATER, '')
+			self.addToken(TokenType.GREATER_EQUAL, '') if self.peekAndMatch(TokenType.EQUAL.value) else self.addToken(TokenType.GREATER, '')
 
 		elif (lexeme == TokenType.STRING.value): # check if lexeme is equal to "
 			while True:
@@ -121,21 +122,21 @@ class Scanner:
 
 		elif (lexeme in TokenType.NUMBER.value):
 			####helper function ############################
-			def consume_digits():
+			def consumeDigits():
 			#####consumes continuous digit without . with optional SEPARATOR
 				while (self.peek() in TokenType.NUMBER.value or self.peek() == TokenType.SEPARATOR.value): # the second and subsequent digit can be _
 					self.advance() # the current number is digit so consume it
 			###########################
-			def check_decimal():
-				if (self.peek() == TokenType.DOT.value and self.peek_next() in TokenType.NUMBER.value): #check for optional . and if present check if the next peeked value is also a number otherwise out `method` calling syntax won't work
+			def checkDecimal():
+				if (self.peek() == TokenType.DOT.value and self.peekNext() in TokenType.NUMBER.value): #check for optional . and if present check if the next peeked value is also a number otherwise out `method` calling syntax won't work
 					self.advance()
 					return True
 				return False
 			#####helper function end #######################
 			
-			consume_digits() #before decimal 
-			if (check_decimal()):#######consumes digits after decimal with optional SEPARATOR
-				consume_digits() 
+			consumeDigits() #before decimal 
+			if (checkDecimal()):#######consumes digits after decimal with optional SEPARATOR
+				consumeDigit() 
 
 			number_value = self.source_code[self.start:self.current].replace(TokenType.SEPARATOR.value, '')#replace occurrence of _ with void value
 			self.addToken(TokenType.NUMBER, float(number_value)) #here we can't rely on the automatic generator since there are items to be removed
@@ -175,7 +176,7 @@ class Scanner:
 			#determine other souce of error
 			pass
 
-	def peek_and_match(self, expected_lexeme):
+	def peekAndMatch(self, expected_lexeme):
 		next_lexeme = self.peek()#peek the next value
 		if (next_lexeme == expected_lexeme):
 			self.advance()#consume the next value
@@ -186,7 +187,7 @@ class Scanner:
 	def peek(self):
 		return TokenType.EOF.value if self.isAtEnd() else self.source_code[self.current]
 
-	def peek_next(self):
+	def peekNext(self):
 		return TokenType.EOF.value if len(self.source_code)<self.current+1 else self.source_code[self.current+1]
 	
 
@@ -254,10 +255,10 @@ class TokenType(Enum):
   BANG_EQUAL = '!='                                
   EQUAL = '='
   EQUAL_EQUAL = '=='                              
-  GREATER = '.'
+  GREATER = '>'
   GREATER_EQUAL = '>='                          
   LESS = '<'
-  LESS_EQUAL = '>='                                
+  LESS_EQUAL = '<='                                
 
   ##Literals.                                     
   IDENTIFIER  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
