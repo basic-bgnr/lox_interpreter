@@ -69,14 +69,64 @@ class GroupingExpression:
 	# 	return f'({self.expression.print()})'
 
 class LiteralExpression:
-	def __init__(self, value):
-		self.value = value
+	def __init__(self, expr):
+		self.expr = expr
+		self.value = expr.literal #this is just for number, string only 
 
 	def linkVisitor(self, visitor):
 		return visitor.visitLiteralExpression(self)
 
 	# def print(self):
 	# 	return str(self.value)
+class Calculator(ExpressionVisitor):
+	def calculate(self, expr):
+		return expr.linkVisitor(self)
+
+	def visitBinaryExpression(self, binary_expression):
+		left_expr = self.calculate(binary_expression.left)
+		operator = binary_expression.operator
+		right_expr = self.calculate(binary_expression.right)
+
+
+		if (operator.lexeme == TokenType.PLUS.value):
+			return left_expr + right_expr
+		if (operator.lexeme == TokenType.MINUS.value):
+			return left_expr - right_expr
+		if (operator.lexeme == TokenType.STAR.value):
+			return left_expr * right_expr
+		if (operator.lexeme == TokenType.SLASH.value):
+			return left_expr / right_expr
+
+
+		if (operator.lexeme == TokenType.EQUAL_EQUAL.value):
+			return left_expr == right_expr
+		if (operator.lexeme == TokenType.BANG_EQUAL.value):
+			return left_expr != right_expr
+		if (operator.lexeme == TokenType.GREATER.value):
+			return left_expr > right_expr
+		if (operator.lexeme == TokenType.GREATER_EQUAL.value):
+			return left_expr >= right_expr
+		if (operator.lexeme == TokenType.LESS.value):
+			return left_expr < right_expr
+		if (operator.lexeme == TokenType.LESS_EQUAL.value):
+			return left_expr <= right_expr
+
+	def visitUnaryExpression(self, unary_expression):
+		operator = unary_expression.operator
+		expr     = self.calculate(unary_expression.right)
+		if (operator.lexeme == TokenType.PLUS.value):
+			return expr
+		if (operator.lexeme == TokenType.MINUS.value):
+			return - expr 
+		if (operator.lexeme == TokenType.BANG.value):
+		    return not expr
+
+	def visitLiteralExpression(self, literal_expression):
+		if (literal_expression.expr.tipe == TokenType.TRUE):
+			return True
+		elif (literal_expression.expr.tipe == TokenType.FALSE):
+			return False
+		return literal_expression.value
 
 class ASTPrinter(ExpressionVisitor):
 
@@ -97,38 +147,16 @@ class ASTPrinter(ExpressionVisitor):
 								unary_expression.right)
 
 	def visitLiteralExpression(self, literal_expression):
-		return str(literal_expression.value)
+		if (literal_expression.expr.tipe in [TokenType.NUMBER, TokenType.STRING]):
+			return str(literal_expression.value)
+		return literal_expression.expr.lexeme
+
 
 	def parenthesize(self, operator, *expressions):
 		
 		recursive_values =  ' '.join([expression.linkVisitor(self) for expression in expressions])
 		return f"({operator} {recursive_values})"
 
-def test_printer():
-	from lexer import TokenType, Token
-
-	new_expr = BinaryExpression(
-		            UnaryExpression(Token(TokenType.MINUS), 
-		            				LiteralExpression(123)),
-		            Token(TokenType.STAR),
-
-		            GroupingExpression(LiteralExpression(45.67))
-		            )
-	# new_expr = LiteralExpression(234)
-	print(ASTPrinter().print(new_expr))
-
-def test_lexer(source_code='2+2*2'):
-
-	scanner = Scanner(source_code)
-	scanner.scanTokens()
-	for tkn in scanner.token_list:
-		print(tkn.toString())
-
-	parser = Parser(scanner.token_list)
-	parser.parse()
-
-	print(ASTPrinter().print(parser.AST))
-	
 from lexer import TokenType, Scanner
 class Parser:
 	def __init__(self, token_list):
@@ -182,17 +210,17 @@ class Parser:
 		return self.literalExpr()
 
 	def literalExpr(self): # this needs to add support for bracketed expr or(group expression) as they have the same precedence as the literal number
-	    if (self.peek().tipe in [TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER]):
+	    if (self.peek().tipe in [TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER, TokenType.TRUE, TokenType.FALSE]):
 	    	literal_expr = self.advance()
-	    	return LiteralExpression(literal_expr.literal)
+	    	return LiteralExpression(literal_expr)
 	    elif (self.peek().tipe == TokenType.LEFT_PAREN):
 	    	self.advance() # consume the '(' token
-	    	group_expr = self.comparisonExpr()
+	    	group_expr = self.parseExpr()
 	    	if (self.peek().tipe == TokenType.RIGHT_PAREN):
 	    		self.advance() # consume the ')' token
 	    		return group_expr
 	    	else:
-	    		print('error no matching parenthesis found')
+	    		print('error no matching parenthesis found') #exception needs to be raised here
 
 	def advance(self):
 		self.current += 1
@@ -215,3 +243,47 @@ class Parser:
 
 	def isAtEnd(self):
 		return self.current >= len(self.token_list)#check the type of the end item
+
+
+
+def test_printer():
+	from lexer import TokenType, Token
+
+	new_expr = BinaryExpression(
+		            UnaryExpression(Token(TokenType.MINUS), 
+		            				LiteralExpression(123)),
+		            Token(TokenType.STAR),
+
+		            GroupingExpression(LiteralExpression(45.67))
+		            )
+	# new_expr = LiteralExpression(234)
+	print(ASTPrinter().print(new_expr))
+
+def test_lexer(source_code='2+2*2'):
+
+	scanner = Scanner(source_code)
+	scanner.scanTokens()
+	for tkn in scanner.token_list:
+		print(tkn.toString())
+
+	parser = Parser(scanner.token_list)
+	parser.parse()
+
+	print(ASTPrinter().print(parser.AST))
+
+
+def test_parser(source_code='2+2*2'):
+	scanner = Scanner(source_code)
+	scanner.scanTokens()
+	# print(scanner.toString())
+
+
+	parser = Parser(scanner.token_list)
+	parser.parse()
+
+	print(ASTPrinter().print(parser.AST))
+	print('___')
+	print(Calculator().calculate(parser.AST))
+	print('___')
+
+
