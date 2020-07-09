@@ -1,6 +1,6 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator
+from parser import Parser, Calculator, StatementExecutor
 
 class Lox:
 	def __init__(self):
@@ -41,10 +41,17 @@ class Lox:
 
 
 		parser = Parser(scanner.token_list)
-		parser.parse()
+		try:
+		    parser.parse()
+		except Exception as e:
+			print(e.args[0])
+			return
 
-		print(Calculator().calculate(parser.AST))
-		
+		#print(Calculator().calculate(parser.AST))
+		for ast in parser.AST:
+			StatementExecutor().execute(ast)
+			
+
 	
 	def error(self, line, err_msg):
 		report(line, "", err_msg) 
