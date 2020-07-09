@@ -1,4 +1,6 @@
-import sys 
+import sys
+from lexer import Scanner
+from parser import Parser, Calculator
 
 class Lox:
 	def __init__(self):
@@ -33,10 +35,16 @@ class Lox:
 			lox_interpreter.run(input())
 	
 	def run(self, program):
-		for token in program:
-			print(token, end='')
-		print()
+		scanner = Scanner(program)
+		scanner.scanTokens()
+		# print(scanner.toString())
 
+
+		parser = Parser(scanner.token_list)
+		parser.parse()
+
+		print(Calculator().calculate(parser.AST))
+		
 	
 	def error(self, line, err_msg):
 		report(line, "", err_msg) 
