@@ -17,8 +17,33 @@
 #   specific method from the polymorphic method `linkVisitor`, this function for each data class has specific function call
 #################################################################
 
+class PrintStatement:
+	def __init__(self, expr):
+		self.expr = expr
+		self.name = f"<{TokenType.PRINT.value}>"
+
+	def linkVisitor(self, visitor):
+		return visitor.visitPrintStatement(self)
 
 
+class ExprStatement:
+	def __init__(self, expr):
+		self.expr = expr
+		self.name = f"<Expression>"
+
+
+	def linkVisitor(self, visitor):
+		return visitor.visitExprStatement(self)
+
+class StatementExecutor:
+	def execute(self, statement):
+		statement.linkVisitor(self)
+
+	def visitPrintStatement(self, statement):
+		print(Calculator().calculate(statement.expr))
+
+	def visitExprStatement(self, statement):
+		Calculator().calculate(statement.expr)
 
 #Implementation of Visitor Pattern for code simplification 
 class ExpressionVisitor:
@@ -126,12 +151,22 @@ class Calculator(ExpressionVisitor):
 			return True
 		elif (literal_expression.expr.tipe == TokenType.FALSE):
 			return False
+		#to do : add case for identifier variable, function call ...etc
 		return literal_expression.value
 
-class ASTPrinter(ExpressionVisitor):
+class ASTPrinter:
 
-	def print(self, expr):
-		return expr.linkVisitor(self)
+	def print(self, entity):
+		return entity.linkVisitor(self)
+
+	def visitPrintStatement(self, statement): 
+		# print('AST')
+		ret_val  = f"{statement.name} {self.print(statement.expr)}"
+		# print(ret_val)
+		return ret_val
+
+	def visitExprStatement(self, statement):
+		return f"{statement.name} {self.print(statement.expr)}"
 
 	def visitBinaryExpression(self, binary_expression):
 		return self.parenthesize(binary_expression.operator.lexeme,
@@ -153,7 +188,6 @@ class ASTPrinter(ExpressionVisitor):
 
 
 	def parenthesize(self, operator, *expressions):
-		
 		recursive_values =  ' '.join([expression.linkVisitor(self) for expression in expressions])
 		return f"({operator} {recursive_values})"
 
@@ -163,10 +197,29 @@ class Parser:
 		self.token_list = token_list
 		self.current = 0
 		self.interpreter = None
-		self.AST = None
+		self.AST = [] # list of statements 
 
 	def parse(self):
-		self.AST = self.parseExpr()
+		self.parseProgram()
+
+	def parseProgram(self):
+		while (self.peek().tipe != TokenType.EOF):
+			statement = self.parseStatement()
+			if (self.peek().tipe == TokenType.SEMICOLON):
+				self.advance()#consume the semicolon
+				self.AST.append(statement)
+			else:
+				raise Exception('statement is not terminated by semicolon', statement)
+
+	def parseStatement(self):
+		if (self.peek().tipe == TokenType.PRINT): # print statement
+		    p_statement = self.advance()#not actually required, we can discard this value
+		    expr = self.parseExpr()
+		    # print('expr ', expr, expr.value)
+		    return PrintStatement(expr)
+		else:
+			expr = self.parseExpr()
+			return ExprStatement(expr)
 
 	def parseExpr(self):
 		return self.comparisonExpr()
@@ -272,7 +325,7 @@ def test_lexer(source_code='2+2*2'):
 	print(ASTPrinter().print(parser.AST))
 
 
-def test_parser(source_code='2+2*2'):
+def test_parser(source_code='2+2*2; print (2 + (3*3+3)'):
 	scanner = Scanner(source_code)
 	scanner.scanTokens()
 	# print(scanner.toString())
@@ -280,10 +333,13 @@ def test_parser(source_code='2+2*2'):
 
 	parser = Parser(scanner.token_list)
 	parser.parse()
+	# print(parser.AST)
+	# print(ASTPrinter().print(parser.AST[0]))
+	# print(ASTPrinter().print(parser.AST[1]))
+	for AST in parser.AST:
+		print(ASTPrinter().print(AST))
 
-	print(ASTPrinter().print(parser.AST))
-	print('___')
-	print(Calculator().calculate(parser.AST))
-	print('___')
-
-
+	print('------')
+	for AST in parser.AST:
+		StatementExecutor().execute(AST)
+	print('------')
