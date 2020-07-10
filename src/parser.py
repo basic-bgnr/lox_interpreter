@@ -18,6 +18,8 @@
 #################################################################
 
 class AssignmentStatement:
+	#lvalue : simple identifier token. (todo, make lvalue an expression)
+	#rvalue : expression
 	def __init__(self, lvalue, rvalue):
 		self.lvalue = lvalue
 		self.rvalue = rvalue 
@@ -45,17 +47,23 @@ class ExprStatement:
 		return visitor.visitExprStatement(self)
 
 class StatementExecutor:
+	def __init__(self, environment):
+		self.environment = environment
+
 	def execute(self, statement):
 		statement.linkVisitor(self)
 
 	def visitAssignmentStatement(self, statement):
-		pass
+		calc = Calculator(self.environment)
+		lvalue = statement.lvalue.literal #get the name of the varible
+		rvalue = calc.calculate(statement.rvalue)
+		self.environment.put(lvalue, rvalue)
 
 	def visitPrintStatement(self, statement):
-		print(Calculator().calculate(statement.expr))
+		print(Calculator(self.environment).calculate(statement.expr))
 
 	def visitExprStatement(self, statement):
-		Calculator().calculate(statement.expr)
+		Calculator(self.environment).calculate(statement.expr)
 
 #Implementation of Visitor Pattern for code simplification 
 class ExpressionVisitor:
@@ -116,6 +124,9 @@ class LiteralExpression:
 	# def print(self):
 	# 	return str(self.value)
 class Calculator(ExpressionVisitor):
+	def __init__(self, environment):
+		self.environment = environment
+
 	def calculate(self, expr):
 		return expr.linkVisitor(self)
 
@@ -164,6 +175,9 @@ class Calculator(ExpressionVisitor):
 		elif (literal_expression.expr.tipe == TokenType.FALSE):
 			return False
 		#to do : add case for identifier variable, function call ...etc
+		elif (literal_expression.expr.tipe == TokenType.IDENTIFIER):
+			return self.environment.get(literal_expression.expr.literal)
+
 		return literal_expression.value
 
 class ASTPrinter:
@@ -377,8 +391,8 @@ def test_parser(source_code='2+2*2; print (2 + (3*3+3)'):
 		StatementExecutor().execute(AST)
 	print('------')
 
-
-def test_parser_assignment_statement(source_code='var a = 23;'):
+from environment import Environment
+def test_parser_assignment_statement(source_code='var a = 23; print a;'):
 	scanner = Scanner(source_code)
 	scanner.scanTokens()
 	# print(scanner.toString())
@@ -394,4 +408,8 @@ def test_parser_assignment_statement(source_code='var a = 23;'):
 		print(ASTPrinter().print(AST))
 
 	print('------')
+	env = Environment()
+	for AST in parser.AST:
+		StatementExecutor(env).execute(AST)
+
 	

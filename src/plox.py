@@ -1,10 +1,12 @@
 import sys
 from lexer import Scanner
 from parser import Parser, Calculator, StatementExecutor
+from environment import Environment
 
 class Lox:
 	def __init__(self):
 		self.had_error = False
+		self.environment = Environment()
 	
 	@staticmethod
 	def main():
@@ -48,8 +50,9 @@ class Lox:
 			return
 
 		#print(Calculator().calculate(parser.AST))
+		interpreter = StatementExecutor(self.environment)
 		for ast in parser.AST:
-			StatementExecutor().execute(ast)
+			interpreter.execute(ast)
 			
 
 	
