@@ -28,6 +28,17 @@ class AssignmentStatement:
 	def linkVisitor(self, visitor):
 		return visitor.visitAssignmentStatement(self)
 
+class ReassignmentStatement:
+	#lvalue : assignable variable
+	#rvalue : expression
+	def __init__(self, lvalue, rvalue):
+		self.lvalue = lvalue
+		self.rvalue = rvalue 
+		self.name = f"<Reassignment>"
+
+	def linkVisitor(self, visitor):
+		return visitor.visitReassignmentStatement(self)
+
 class PrintStatement:
 	def __init__(self, expr):
 		self.expr = expr
@@ -58,6 +69,13 @@ class StatementExecutor:
 		lvalue = statement.lvalue.literal #get the name of the varible
 		rvalue = calc.calculate(statement.rvalue)
 		self.environment.put(lvalue, rvalue)
+
+	def visitReassignmentStatement(self, statement):
+		calc = Calculator(self.environment)
+		lvalue = statement.lvalue.literal #get the name of the varible
+		rvalue = calc.calculate(statement.rvalue)
+		self.environment.putIfExists(lvalue, rvalue)
+
 
 	def visitPrintStatement(self, statement):
 		print(Calculator(self.environment).calculate(statement.expr))
@@ -190,6 +208,9 @@ class ASTPrinter:
 		ret_val = f"{statement.name} {statement.lvalue.literal}, {self.print(statement.rvalue)}"
 		return ret_val
 
+	def visitReassignmentStatement(self, statement):
+		return self.visitAssignmentStatement(statement)
+
 	def visitPrintStatement(self, statement): 
 		# print('AST')
 		ret_val  = f"{statement.name} {self.print(statement.expr)}"
@@ -245,7 +266,7 @@ class Parser:
 	def parseStatement(self):
 		#variable statement
 		#print statement 
-		#expression statement
+		#expression statement, reassignment statement
 		if (self.peek().tipe == TokenType.VAR):
 			self.advance() # consume the var keyword
 			#var must be initialized with value mandatorily
@@ -258,15 +279,23 @@ class Parser:
 			else:
 				raise Exception('var keyword must be followed by identifier, equals sign and a mandatory rvalue')
 
-
 		if (self.peek().tipe == TokenType.PRINT): # print statement
 		    p_statement = self.advance()#not actually required, we can discard this value
 		    expr = self.parseExpr()
 		    # print('expr ', expr, expr.value)
 		    return PrintStatement(expr)
+		# the following handles expression statement as well as reassignment statement
 		else:
-			expr = self.parseExpr()
-			return ExprStatement(expr)
+			lvalue = self.parseExpr()
+			if (self.peek().tipe == TokenType.EQUAL): # this is reassignment statement
+			    if (lvalue.expr.tipe == TokenType.IDENTIFIER): #check if the lvalue is assignable variable
+			         self.advance() # consume the equal sign
+			         rvalue = self.parseExpr()
+			         return ReassignmentStatement(lvalue.expr, rvalue) # lvalue.expr because self.parseExpr() return LiteralExpresion whose expr property contains the actual token
+			    else:
+			    	raise Exception("non assignable target")
+			else: #if there is no equlity sign then it must be expression statement 
+			    return ExprStatement(lvalue)
 
 	def parseExpr(self):
 		return self.comparisonExpr()
@@ -392,7 +421,7 @@ def test_parser(source_code='2+2*2; print (2 + (3*3+3)'):
 	print('------')
 
 from environment import Environment
-def test_parser_assignment_statement(source_code='var a = 23; print a;'):
+def test_parser_assignment_statement(source_code='var a = 23; a = 10; print a;'):
 	scanner = Scanner(source_code)
 	scanner.scanTokens()
 	# print(scanner.toString())
