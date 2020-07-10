@@ -17,6 +17,15 @@
 #   specific method from the polymorphic method `linkVisitor`, this function for each data class has specific function call
 #################################################################
 
+class AssignmentStatement:
+	def __init__(self, lvalue, rvalue):
+		self.lvalue = lvalue
+		self.rvalue = rvalue 
+		self.name = f"<Assignment>"
+
+	def linkVisitor(self, visitor):
+		return visitor.visitAssignmentStatement(self)
+
 class PrintStatement:
 	def __init__(self, expr):
 		self.expr = expr
@@ -38,6 +47,9 @@ class ExprStatement:
 class StatementExecutor:
 	def execute(self, statement):
 		statement.linkVisitor(self)
+
+	def visitAssignmentStatement(self, statement):
+		pass
 
 	def visitPrintStatement(self, statement):
 		print(Calculator().calculate(statement.expr))
@@ -155,9 +167,14 @@ class Calculator(ExpressionVisitor):
 		return literal_expression.value
 
 class ASTPrinter:
-
+	#statement are enclosed in <>
 	def print(self, entity):
 		return entity.linkVisitor(self)
+
+	def visitAssignmentStatement(self, statement):
+		#below statement.lvalue.literal is used since statement.lvalue.lexeme contains entire alphanumeric characters
+		ret_val = f"{statement.name} {statement.lvalue.literal}, {self.print(statement.rvalue)}"
+		return ret_val
 
 	def visitPrintStatement(self, statement): 
 		# print('AST')
@@ -182,7 +199,7 @@ class ASTPrinter:
 								unary_expression.right)
 
 	def visitLiteralExpression(self, literal_expression):
-		if (literal_expression.expr.tipe in [TokenType.NUMBER, TokenType.STRING]):
+		if (literal_expression.expr.tipe in [TokenType.NUMBER, TokenType.STRING, TokenType.IDENTIFIER]):
 			return str(literal_expression.value)
 		return literal_expression.expr.lexeme
 
@@ -212,6 +229,22 @@ class Parser:
 				raise Exception('statement is not terminated by semicolon', statement)
 
 	def parseStatement(self):
+		#variable statement
+		#print statement 
+		#expression statement
+		if (self.peek().tipe == TokenType.VAR):
+			self.advance() # consume the var keyword
+			#var must be initialized with value mandatorily
+			lvalue = self.advance()
+			if (self.peek().tipe == TokenType.EQUAL):
+				self.advance() # consume the equal sign
+				rvalue = self.parseExpr()
+				assignment_statement = AssignmentStatement(lvalue, rvalue)
+				return assignment_statement
+			else:
+				raise Exception('var keyword must be followed by identifier, equals sign and a mandatory rvalue')
+
+
 		if (self.peek().tipe == TokenType.PRINT): # print statement
 		    p_statement = self.advance()#not actually required, we can discard this value
 		    expr = self.parseExpr()
@@ -343,3 +376,22 @@ def test_parser(source_code='2+2*2; print (2 + (3*3+3)'):
 	for AST in parser.AST:
 		StatementExecutor().execute(AST)
 	print('------')
+
+
+def test_parser_assignment_statement(source_code='var a = 23;'):
+	scanner = Scanner(source_code)
+	scanner.scanTokens()
+	# print(scanner.toString())
+
+
+	parser = Parser(scanner.token_list)
+	parser.parse()
+	# print(parser.AST)
+	# print(ASTPrinter().print(parser.AST[0]))
+	# print(ASTPrinter().print(parser.AST[1]))
+	print('------')
+	for AST in parser.AST:
+		print(ASTPrinter().print(AST))
+
+	print('------')
+	
