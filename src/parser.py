@@ -16,6 +16,13 @@
 #   what this pattern does is that at coding time create specific implementation of the data manipulation method and calls that 
 #   specific method from the polymorphic method `linkVisitor`, this function for each data class has specific function call
 #################################################################
+class BlockStatement:
+	def __init__(self, statements): 
+		self.statements = statements
+		self.name = f"<Block>"
+
+	def linkVisitor(self, visitor):
+		return visitor.visitBlockStatement(self)
 
 class AssignmentStatement:
 	#lvalue : simple identifier token. (todo, make lvalue an expression)
@@ -63,6 +70,11 @@ class StatementExecutor:
 
 	def execute(self, statement):
 		statement.linkVisitor(self)
+
+	def visitBlockStatement(self, block_statement):
+		block_executor = StatementExecutor(Environment(parent=self.environment))
+		for statement in block_statement.statements:
+			block_executor.execute(statement)
 
 	def visitAssignmentStatement(self, statement):
 		calc = Calculator(self.environment)
@@ -203,6 +215,13 @@ class ASTPrinter:
 	def print(self, entity):
 		return entity.linkVisitor(self)
 
+	def visitBlockStatement(self, block_statement):
+		ret_val = block_statement.name + "{\n"
+		for statement in block_statement.statements:
+			ret_val += self.print(statement) + '\n'
+		ret_val += '}'
+		return ret_val
+
 	def visitAssignmentStatement(self, statement):
 		#below statement.lvalue.literal is used since statement.lvalue.lexeme contains entire alphanumeric characters
 		ret_val = f"{statement.name} {statement.lvalue.literal}, {self.print(statement.rvalue)}"
@@ -252,21 +271,26 @@ class Parser:
 		self.AST = [] # list of statements 
 
 	def parse(self):
-		self.parseProgram()
+		self.AST = self.parseProgram()
 
-	def parseProgram(self):
+	def parseProgram(self): #returns list statements
+		AST = []
 		while (self.peek().tipe != TokenType.EOF):
 			statement = self.parseStatement()
 			if (self.peek().tipe == TokenType.SEMICOLON):
 				self.advance()#consume the semicolon
-				self.AST.append(statement)
+				AST.append(statement)
 			else:
 				raise Exception('statement is not terminated by semicolon', statement)
+		return AST 
 
 	def parseStatement(self):
 		#variable statement
 		#print statement 
 		#expression statement, reassignment statement
+		#block statement
+
+		#variable statement
 		if (self.peek().tipe == TokenType.VAR):
 			self.advance() # consume the var keyword
 			#var must be initialized with value mandatorily
@@ -279,7 +303,28 @@ class Parser:
 			else:
 				raise Exception('var keyword must be followed by identifier, equals sign and a mandatory rvalue')
 
-		if (self.peek().tipe == TokenType.PRINT): # print statement
+		#block statement
+		if(self.peek().tipe == TokenType.LEFT_BRACE):
+			left_brace = self.advance() # consume the left brace
+			statements = []
+			while (self.peek().tipe != TokenType.RIGHT_BRACE):
+				if (self.peek().tipe == TokenType.EOF):
+					raise Exception(f'Block statement not terminated by matching brace at line {left_brace.line}')
+				
+				statement = self.parseStatement()
+				#look for ; in the next token
+				if (self.peek().tipe == TokenType.SEMICOLON):
+					self.advance() # consumet the semicolon
+					statements.append(statement)
+				else:
+					raise Exception(f'->statement not terminated at line {self.peek().line}')
+
+			self.advance() # consume the right brace
+			return BlockStatement(statements)
+			
+
+		# print statement
+		if (self.peek().tipe == TokenType.PRINT): 
 		    p_statement = self.advance()#not actually required, we can discard this value
 		    expr = self.parseExpr()
 		    # print('expr ', expr, expr.value)
@@ -442,3 +487,22 @@ def test_parser_assignment_statement(source_code='var a = 23; a = 10; print a;')
 		StatementExecutor(env).execute(AST)
 
 	
+def test_parser_block_statement(source_code='{ a = 10; print a; };'):
+	scanner = Scanner(source_code)
+	scanner.scanTokens()
+	# print(scanner.toString())
+
+
+	parser = Parser(scanner.token_list)
+	parser.parse()
+	# print(parser.AST)
+	# print(ASTPrinter().print(parser.AST[0]))
+	# print(ASTPrinter().print(parser.AST[1]))
+	print('------')
+	for AST in parser.AST:
+		print(ASTPrinter().print(AST))
+
+	print('------')
+	env = Environment()
+	for AST in parser.AST:
+		StatementExecutor(env).execute(AST)
