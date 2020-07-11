@@ -1,0 +1,23 @@
+var pi = 3.1415;
+print "the value of pi is";
+print pi;
+
+var rad = 10;
+print "the value of radius is";
+print rad;
+
+print "the area is ";
+print pi * rad * rad;
+
+{
+print pi;
+print "pi is changed to 10";
+pi = 10;
+{
+print pi;
+print "next pi to 100";
+pi = 100;
+};
+};
+print "changed pi";
+print pi;
