@@ -161,42 +161,48 @@ class Calculator(ExpressionVisitor):
 		return expr.linkVisitor(self)
 
 	def visitBinaryExpression(self, binary_expression):
+		# to do(completed): clean up the following conditional check about `lexeme` and replacement with `operator == TokenType.[PLUS, MINUS.....] directly
 		left_expr = self.calculate(binary_expression.left)
 		operator = binary_expression.operator
 		right_expr = self.calculate(binary_expression.right)
 
+		if (operator.tipe == TokenType.AND):
+			return left_expr and right_expr
+		if (operator.tipe == TokenType.OR):
+			return left_expr or right_expr
 
-		if (operator.lexeme == TokenType.PLUS.value):
+
+		if (operator.tipe == TokenType.PLUS):
 			return left_expr + right_expr
-		if (operator.lexeme == TokenType.MINUS.value):
+		if (operator.tipe == TokenType.MINUS):
 			return left_expr - right_expr
-		if (operator.lexeme == TokenType.STAR.value):
+		if (operator.tipe == TokenType.STAR):
 			return left_expr * right_expr
-		if (operator.lexeme == TokenType.SLASH.value):
+		if (operator.tipe == TokenType.SLASH):
 			return left_expr / right_expr
 
 
-		if (operator.lexeme == TokenType.EQUAL_EQUAL.value):
+		if (operator.tipe == TokenType.EQUAL_EQUAL):
 			return left_expr == right_expr
-		if (operator.lexeme == TokenType.BANG_EQUAL.value):
+		if (operator.tipe == TokenType.BANG_EQUAL):
 			return left_expr != right_expr
-		if (operator.lexeme == TokenType.GREATER.value):
+		if (operator.tipe == TokenType.GREATER):
 			return left_expr > right_expr
-		if (operator.lexeme == TokenType.GREATER_EQUAL.value):
+		if (operator.tipe == TokenType.GREATER_EQUAL):
 			return left_expr >= right_expr
-		if (operator.lexeme == TokenType.LESS.value):
+		if (operator.tipe == TokenType.LESS):
 			return left_expr < right_expr
-		if (operator.lexeme == TokenType.LESS_EQUAL.value):
+		if (operator.tipe == TokenType.LESS_EQUAL):
 			return left_expr <= right_expr
 
 	def visitUnaryExpression(self, unary_expression):
 		operator = unary_expression.operator
 		expr     = self.calculate(unary_expression.right)
-		if (operator.lexeme == TokenType.PLUS.value):
+		if (operator.tipe == TokenType.PLUS):
 			return expr
-		if (operator.lexeme == TokenType.MINUS.value):
+		if (operator.tipe == TokenType.MINUS):
 			return - expr 
-		if (operator.lexeme == TokenType.BANG.value):
+		if (operator.tipe == TokenType.BANG):
 		    return not expr
 
 	def visitLiteralExpression(self, literal_expression):
@@ -343,7 +349,15 @@ class Parser:
 			    return ExprStatement(lvalue)
 
 	def parseExpr(self):
-		return self.comparisonExpr()
+		return self.logicalExpr()
+
+	def logicalExpr(self):
+		left_expr = self.comparisonExpr()
+		if (self.peek().tipe in [TokenType.AND, TokenType.OR]):
+			operator = self.advance() #return `and` or `or`
+			right_expr = self.logicalExpr()
+			return BinaryExpression(left_expr, operator, right_expr)
+		return left_expr
 
 	def comparisonExpr(self):
 		left_expr = self.additionExpr()
