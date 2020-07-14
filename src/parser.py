@@ -16,6 +16,27 @@
 #   what this pattern does is that at coding time create specific implementation of the data manipulation method and calls that 
 #   specific method from the polymorphic method `linkVisitor`, this function for each data class has specific function call
 #################################################################
+class WhileStatement:
+	def __init__(self, expression, block_statement):
+		self.expression = expression
+		self.block_statement = block_statement
+		self.name = f"<while>"
+
+	def linkVisitor(self, visitor):
+		return visitor.visitWhileStatement(self)
+
+class IfStatement:
+	def __init__(self, expression, if_block_statement, else_block_statement=None):
+		self.expression = expression
+		self.if_block_statement = if_block_statement
+		self.else_block_statement = else_block_statement
+
+		self.name1 = f"<if>"
+		self.name2 = f"<else>"
+
+	def linkVisitor(self, visitor):
+		return visitor.visitIfStatement(self)
+
 class BlockStatement:
 	def __init__(self, statements): 
 		self.statements = statements
@@ -70,6 +91,19 @@ class StatementExecutor:
 
 	def execute(self, statement):
 		statement.linkVisitor(self)
+
+	def visitWhileStatement(self, while_statement):
+		calculator= Calculator(self.environment)
+		while (calculator.calculate(while_statement.expression)):
+			self.execute(while_statement.block_statement)
+
+	def visitIfStatement(self, if_statement):
+		calculator = Calculator(self.environment)
+
+		if (calculator.calculate(if_statement.expression)):
+			self.execute(if_statement.if_block_statement)
+		else:
+			self.execute(if_statement.else_block_statement)
 
 	def visitBlockStatement(self, block_statement):
 		block_executor = StatementExecutor(Environment(parent=self.environment))
@@ -221,6 +255,19 @@ class ASTPrinter:
 	def print(self, entity):
 		return entity.linkVisitor(self)
 
+	def visitWhileStatement(self, while_statement):
+		ret_val = while_statement.name + ' ' + self.print(while_statement.expression) + '\n'
+		ret_val += self.print(while_statement.block_statement)
+		return ret_val
+
+	def visitIfStatement(self, if_statement):
+		ret_val = if_statement.name1 + ' ' + self.print(if_statement.expression) +'\n'
+		ret_val += self.print(if_statement.if_block_statement) + '\n'
+		if (else_block_statement := if_statement.else_block_statement):
+			ret_val += if_statement.name2 + '\n' 
+			ret_val += self.print(else_block_statement)
+		return ret_val
+
 	def visitBlockStatement(self, block_statement):
 		ret_val = block_statement.name + "{\n"
 		for statement in block_statement.statements:
@@ -295,7 +342,30 @@ class Parser:
 		#print statement 
 		#expression statement, reassignment statement
 		#block statement
+		#if statement
 
+		if (variable_statement := self.variableStatement()):
+			return variable_statement
+
+		if (block_statement := self.blockStatement()):
+			return block_statement
+
+		if (if_statement := self.ifStatement()):
+			return if_statement
+
+		if (print_statement := self.printStatement()):
+			return print_statement
+
+		if (while_statement := self.whileStatement()):
+			return while_statement
+
+		if (expression_statement := self.expressionStatement()):
+			return expression_statement
+
+		raise Exception(f'Invalid statement at line {self.peek().line}')
+
+
+	def variableStatement(self):
 		#variable statement
 		if (self.peek().tipe == TokenType.VAR):
 			self.advance() # consume the var keyword
@@ -309,6 +379,7 @@ class Parser:
 			else:
 				raise Exception('var keyword must be followed by identifier, equals sign and a mandatory rvalue')
 
+	def blockStatement(self):
 		#block statement
 		if(self.peek().tipe == TokenType.LEFT_BRACE):
 			left_brace = self.advance() # consume the left brace
@@ -327,8 +398,8 @@ class Parser:
 
 			self.advance() # consume the right brace
 			return BlockStatement(statements)
-			
 
+	def printStatement(self):
 		# print statement
 		if (self.peek().tipe == TokenType.PRINT): 
 		    p_statement = self.advance()#not actually required, we can discard this value
@@ -336,17 +407,43 @@ class Parser:
 		    # print('expr ', expr, expr.value)
 		    return PrintStatement(expr)
 		# the following handles expression statement as well as reassignment statement
-		else:
-			lvalue = self.parseExpr()
-			if (self.peek().tipe == TokenType.EQUAL): # this is reassignment statement
-			    if (lvalue.expr.tipe == TokenType.IDENTIFIER): #check if the lvalue is assignable variable
-			         self.advance() # consume the equal sign
-			         rvalue = self.parseExpr()
-			         return ReassignmentStatement(lvalue.expr, rvalue) # lvalue.expr because self.parseExpr() return LiteralExpresion whose expr property contains the actual token
-			    else:
-			    	raise Exception("non assignable target")
-			else: #if there is no equlity sign then it must be expression statement 
-			    return ExprStatement(lvalue)
+
+	def expressionStatement(self):
+		lvalue = self.parseExpr()
+		if (self.peek().tipe == TokenType.EQUAL): # this is reassignment statement
+		    if (lvalue.expr.tipe == TokenType.IDENTIFIER): #check if the lvalue is assignable variable
+		         self.advance() # consume the equal sign
+		         rvalue = self.parseExpr()
+		         return ReassignmentStatement(lvalue.expr, rvalue) # lvalue.expr because self.parseExpr() return LiteralExpresion whose expr property contains the actual token
+		    else:
+		    	raise Exception("non assignable target")
+		else: #if there is no equlity sign then it must be expression statement 
+		    return ExprStatement(lvalue)
+
+	def ifStatement(self):
+		if (self.peek().tipe == TokenType.IF):
+			self.advance() #consume the 'if' token
+			expression = self.parseExpr()
+			if (if_block_statement := self.blockStatement()):
+				if (self.peek().tipe == TokenType.ELSE):
+					self.advance() # consume the 'else' token
+					if else_block_statement := self.blockStatement():
+						return IfStatement(expression, if_block_statement, else_block_statement)
+					else:
+						raise Exception(f"else statement must be followed by matching braces at line {self.peek().line}")
+				else:
+					return IfStatement(expression, if_block_statement)
+			else:
+				raise Exception(f"if statement must be followed by matching braces at line {self.peek().line}")
+
+	def whileStatement(self):
+		if (self.peek().tipe == TokenType.WHILE):
+			self.advance() # consume the `while` token
+			expression = self.parseExpr()
+			if (block_statement := self.blockStatement()):
+				return WhileStatement(expression, block_statement)
+			else:
+				raise Exception(f"while statement must be followed by matching braces at line {self.peek().line}")
 
 	def parseExpr(self):
 		return self.logicalExpr()
@@ -502,6 +599,58 @@ def test_parser_assignment_statement(source_code='var a = 23; a = 10; print a;')
 
 	
 def test_parser_block_statement(source_code='{ a = 10; print a; };'):
+	scanner = Scanner(source_code)
+	scanner.scanTokens()
+	# print(scanner.toString())
+
+
+	parser = Parser(scanner.token_list)
+	parser.parse()
+	# print(parser.AST)
+	# print(ASTPrinter().print(parser.AST[0]))
+	# print(ASTPrinter().print(parser.AST[1]))
+	print('------')
+	for AST in parser.AST:
+		print(ASTPrinter().print(AST))
+
+	print('------')
+	env = Environment()
+	for AST in parser.AST:
+		StatementExecutor(env).execute(AST)
+
+
+def test_if_block_statement(source_code='''if true { 
+	print true; 
+	} else {
+	print false; 
+	}; '''):
+
+	scanner = Scanner(source_code)
+	scanner.scanTokens()
+	# print(scanner.toString())
+
+
+	parser = Parser(scanner.token_list)
+	parser.parse()
+	# print(parser.AST)
+	# print(ASTPrinter().print(parser.AST[0]))
+	# print(ASTPrinter().print(parser.AST[1]))
+	print('------')
+	for AST in parser.AST:
+		print(ASTPrinter().print(AST))
+
+	print('------')
+	env = Environment()
+	for AST in parser.AST:
+		StatementExecutor(env).execute(AST)
+
+
+def test_while_block_statement(source_code='''var i = 0;
+	while i<3 { 
+	    print i;
+	    i = i + 1;
+	};'''):
+
 	scanner = Scanner(source_code)
 	scanner.scanTokens()
 	# print(scanner.toString())
