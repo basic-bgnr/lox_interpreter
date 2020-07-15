@@ -112,15 +112,17 @@ class StatementExecutor:
 
 	def visitAssignmentStatement(self, statement):
 		calc = Calculator(self.environment)
-		lvalue = statement.lvalue.literal #get the name of the varible
+		lvalue = statement.lvalue.expr.literal #get the name of the varible #this
 		rvalue = calc.calculate(statement.rvalue)
 		self.environment.put(lvalue, rvalue)
 
 	def visitReassignmentStatement(self, statement):
 		calc = Calculator(self.environment)
-		lvalue = statement.lvalue.literal #get the name of the varible
+		lvalue = statement.lvalue.expr.literal #get the name of the varible # this 
 		rvalue = calc.calculate(statement.rvalue)
 		self.environment.putIfExists(lvalue, rvalue)
+		#print(f'inside statement executor statements {statement.rvalue}   {statement.lvalue}')
+		#print(f'inside statement executor {lvalue} -> {rvalue}')
 
 
 	def visitPrintStatement(self, statement):
@@ -200,6 +202,8 @@ class Calculator(ExpressionVisitor):
 		operator = binary_expression.operator
 		right_expr = self.calculate(binary_expression.right)
 
+		#print(f'inside calculator BinaryExpression {left_expr} and {right_expr}')
+
 		if (operator.tipe == TokenType.AND):
 			return left_expr and right_expr
 		if (operator.tipe == TokenType.OR):
@@ -277,11 +281,12 @@ class ASTPrinter:
 
 	def visitAssignmentStatement(self, statement):
 		#below statement.lvalue.literal is used since statement.lvalue.lexeme contains entire alphanumeric characters
-		ret_val = f"{statement.name} {statement.lvalue.literal}, {self.print(statement.rvalue)}"
+		ret_val = f"{statement.name} {self.print(statement.lvalue)}, {self.print(statement.rvalue)}"
 		return ret_val
 
 	def visitReassignmentStatement(self, statement):
-		return self.visitAssignmentStatement(statement)
+		ret_val = f"{statement.name} {self.print(statement.lvalue)}, {self.print(statement.rvalue)}"
+		return ret_val
 
 	def visitPrintStatement(self, statement): 
 		# print('AST')
@@ -334,7 +339,7 @@ class Parser:
 				self.advance()#consume the semicolon
 				AST.append(statement)
 			else:
-				raise Exception('statement is not terminated by semicolon', statement)
+				raise Exception(f'statement is not terminated by semicolon at line {self.peek().line}')
 		return AST 
 
 	def parseStatement(self):
@@ -370,7 +375,7 @@ class Parser:
 		if (self.peek().tipe == TokenType.VAR):
 			self.advance() # consume the var keyword
 			#var must be initialized with value mandatorily
-			lvalue = self.advance()
+			lvalue = self.parseExpr() #self.advance()
 			if (self.peek().tipe == TokenType.EQUAL):
 				self.advance() # consume the equal sign
 				rvalue = self.parseExpr()
@@ -410,15 +415,32 @@ class Parser:
 
 	def expressionStatement(self):
 		lvalue = self.parseExpr()
-		if (self.peek().tipe == TokenType.EQUAL): # this is reassignment statement
-		    if (lvalue.expr.tipe == TokenType.IDENTIFIER): #check if the lvalue is assignable variable
-		         self.advance() # consume the equal sign
-		         rvalue = self.parseExpr()
-		         return ReassignmentStatement(lvalue.expr, rvalue) # lvalue.expr because self.parseExpr() return LiteralExpresion whose expr property contains the actual token
-		    else:
-		    	raise Exception("non assignable target")
+		if (self.peek().tipe in [TokenType.EQUAL, TokenType.MINUS_EQUAL, TokenType.PLUS_EQUAL, TokenType.STAR_EQUAL, TokenType.SLASH_EQUAL]): # this is reassignment statement
+			if (lvalue.expr.tipe == TokenType.IDENTIFIER): #check if the lvalue is assignable variable
+				operator = self.advance() # consume the sign
+				rvalue = self.parseExpr()
+				if (operator.tipe == TokenType.EQUAL):
+					return ReassignmentStatement(lvalue, rvalue)
+				### the following procedure replaces the double token with their equivalent single token operator and at the 
+				### end carry out syntactic operation of binaryExpression and return it as
+				if (operator.tipe == TokenType.PLUS_EQUAL):
+					operator.tipe = TokenType.PLUS 
+
+				if (operator.tipe == TokenType.MINUS_EQUAL):
+					operator.tipe = TokenType.MINUS 
+
+				if (operator.tipe == TokenType.STAR_EQUAL):
+					operator.tipe = TokenType.STAR
+
+				if (operator.tipe == TokenType.SLASH_EQUAL):
+					operator.tipe = TokenType.SLASH
+
+				syntactic_expression  = BinaryExpression(lvalue, operator, rvalue)
+				return ReassignmentStatement(lvalue, syntactic_expression)
+			else:
+				raise Exception("non assignable target")
 		else: #if there is no equlity sign then it must be expression statement 
-		    return ExprStatement(lvalue)
+			return ExprStatement(lvalue)
 
 	def ifStatement(self):
 		if (self.peek().tipe == TokenType.IF):
@@ -650,6 +672,31 @@ def test_while_block_statement(source_code='''var i = 0;
 	    print i;
 	    i = i + 1;
 	};'''):
+
+	scanner = Scanner(source_code)
+	scanner.scanTokens()
+	# print(scanner.toString())
+
+
+	parser = Parser(scanner.token_list)
+	parser.parse()
+	# print(parser.AST)
+	# print(ASTPrinter().print(parser.AST[0]))
+	# print(ASTPrinter().print(parser.AST[1]))
+	print('------')
+	for AST in parser.AST:
+		print(ASTPrinter().print(AST))
+
+	print('------')
+	env = Environment()
+	for AST in parser.AST:
+		StatementExecutor(env).execute(AST)
+
+
+def test_reassignment_statement(source_code='''var i = 110;
+	print i;
+	i /= 10;
+	print i;'''):
 
 	scanner = Scanner(source_code)
 	scanner.scanTokens()
