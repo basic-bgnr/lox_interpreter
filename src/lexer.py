@@ -51,21 +51,21 @@ class Scanner:
 
 		elif (lexeme == TokenType.DOT.value):
 			self.addToken(TokenType.DOT, '')
-
+		###################################### syntactic sugar
 		elif (lexeme == TokenType.MINUS.value):
-			self.addToken(TokenType.MINUS, '')
+			self.addToken(TokenType.MINUS_EQUAL, '') if(self.peekAndMatch(TokenType.EQUAL.value)) else self.addToken(TokenType.MINUS, '')
 
 		elif (lexeme == TokenType.PLUS.value):
-			self.addToken(TokenType.PLUS, '')
-
-		elif (lexeme == TokenType.SEMICOLON.value):
-			self.addToken(TokenType.SEMICOLON, '')
+			self.addToken(TokenType.PLUS_EQUAL, '') if(self.peekAndMatch(TokenType.EQUAL.value))  else self.addToken(TokenType.PLUS, '')
 
 		elif (lexeme == TokenType.STAR.value):
-			self.addToken(TokenType.STAR, '')
+			self.addToken(TokenType.STAR_EQUAL, '') if(self.peekAndMatch(TokenType.EQUAL.value))  else self.addToken(TokenType.STAR, '')
 			
 		elif (lexeme == TokenType.SLASH.value):
-			self.addToken(TokenType.SLASH, '')
+			self.addToken(TokenType.SLASH_EQUAL, '') if(self.peekAndMatch(TokenType.EQUAL.value)) else self.addToken(TokenType.SLASH, '')
+		#########################################################
+		elif (lexeme == TokenType.SEMICOLON.value):
+			self.addToken(TokenType.SEMICOLON, '')
 
 		elif (lexeme == TokenType.COMMENT.value):
 			#this is a comment and must be consumed till the end of line 
@@ -235,11 +235,7 @@ class TokenType(Enum):
   RIGHT_BRACE = '}'
   COMMA =','
   DOT  = '.'
-  MINUS = '-'
-  PLUS = '+'
   SEMICOLON = ';'
-  SLASH ='/'
-  STAR = '*'
   NEW_LINE = '\n'
   SEPARATOR = '_'
 
@@ -258,7 +254,19 @@ class TokenType(Enum):
   GREATER = '>'
   GREATER_EQUAL = '>='                          
   LESS = '<'
-  LESS_EQUAL = '<='                                
+  LESS_EQUAL = '<='
+  #syntactic sugar
+  MINUS = '-'
+  MINUS_EQUAL = '-='
+
+  PLUS = '+'
+  PLUS_EQUAL = '+='
+  
+  SLASH ='/'
+  SLASH_EQUAL ='/='
+
+  STAR = '*'  
+  STAR_EQUAL = '*='  
 
   ##Literals.                                     
   IDENTIFIER  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
