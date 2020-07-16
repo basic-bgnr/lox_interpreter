@@ -1,12 +1,20 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator, StatementExecutor
+from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit
 from environment import Environment
 
 class Lox:
 	def __init__(self):
 		self.had_error = False
 		self.environment = Environment()
+
+		### initialize native function####
+		timer = NativeTimer()
+		timer.register('timer', self.environment)
+
+		ext = Exit()
+		ext.register('exit', self.environment)
+		##################################
 	
 	@staticmethod
 	def main():
