@@ -1,0 +1,20 @@
+var initial_time = timer();
+
+fun draw(graphic, graphic_increment, length) {
+    while length {
+        print graphic;
+        graphic += graphic_increment;
+        length -= 1;
+   };
+};
+
+#upper triangle
+draw("*", "*", 10);
+#lower triangle
+draw("*", "**", 10);
+#mast
+draw("*", "", 4);
+
+var final_time = timer();
+
+print "time required: " + str((final_time - initial_time)/1000000) + " ms";
