@@ -1,6 +1,6 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit
+from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str
 from environment import Environment
 
 class Lox:
@@ -14,6 +14,9 @@ class Lox:
 
 		ext = Exit()
 		ext.register('exit', self.environment)
+
+		string = Str()
+		string.register('str', self.environment) 
 		##################################
 	
 	@staticmethod

@@ -63,6 +63,20 @@ class Exit(CallableFunction):
         
     def call(self, args):
         return self.func(args[0] if args else 0)
+
+class Str(CallableFunction):
+    def __init__(self):
+        self.func = str
+        self.name = ''
+
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+    def arity(self):
+        return 1
+
+    def call(self, args):
+        return self.func(args[0] if args else "")
 ########################################################
 ######################lox_fuction#######################
 class LoxFunction(CallableFunction):
