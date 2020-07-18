@@ -30,7 +30,7 @@ class CallableFunction:
         pass
     def arity(self):
         pass 
-    def call(self, args):
+    def call(self, args, closure_environment):
         pass
     
 
@@ -48,7 +48,7 @@ class NativeTimer(CallableFunction):
     def arity(self):
         return 0
         
-    def call(self, args):
+    def call(self, args, closure_environment=None):
         return self.func()
 
 
@@ -66,7 +66,7 @@ class Exit(CallableFunction):
     def arity(self):
         return 1
         
-    def call(self, args):
+    def call(self, args, closure_environment=None):
         return self.func(args[0] if args else 0)
 
 class Str(CallableFunction):
@@ -80,7 +80,7 @@ class Str(CallableFunction):
     def arity(self):
         return 1
 
-    def call(self, args):
+    def call(self, args, closure_environment=None):
         return self.func(args[0] if args else "")
 ########################################################
 ######################lox_fuction#######################
@@ -96,23 +96,25 @@ class LoxFunction(CallableFunction):
         
         #create of copy of the this global loxfunction and carry out everything within its child environment 
         #so as to make everything immutable when this function is called next time 
-        function_call_environment = Environment(self.environment)
+        closure_environment = self.environment
 
         for param, arg in zip(self.function_statement.params_list, args):
-            function_call_environment.put(param.literal, arg)
+            closure_environment.put(param.literal, arg)
 
         # print(f'inside lox call function -> {self.environment.hashmap}, {self.executor.environment.hashmap}')
         #creates a new execution context
-        executor = StatementExecutor(function_call_environment)
-
+        executor = StatementExecutor(closure_environment)
+        
         try:
             executor.execute(self.function_statement.block_statement)
         except ReturnException as e:
             return e.ret_value
 
+        # print(closure_environment)
+
     def register(self, environment):
         self.environment = environment
-        environment.put(self.function_statement.function_identifier_token.literal, self)
+        self.environment.put(self.function_statement.function_identifier_token.literal, self)
 
     def arity(self):
         pass 
