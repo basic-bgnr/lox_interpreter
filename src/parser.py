@@ -95,7 +95,10 @@ class LoxFunction(CallableFunction):
         # print(f'inside lox call function -> {self.environment.hashmap}, {self.executor.environment.hashmap}')
 
         executor = StatementExecutor(self.environment)
-        executor.execute(self.function_statement.block_statement)
+        try:
+            executor.execute(self.function_statement.block_statement)
+        except ReturnException as e:
+            return e.ret_value
 
     def register(self, name, environment):
         self.name = name
@@ -105,7 +108,7 @@ class LoxFunction(CallableFunction):
         pass 
 
 ########################################################
-class FunctionStatement():
+class FunctionStatement:
     def __init__(self, function_identifier_token, params_list, block_statement):
         self.function_identifier_token = function_identifier_token
         self.params_list = params_list #list of token
@@ -115,6 +118,20 @@ class FunctionStatement():
 
     def linkVisitor(self, visitor):
         return visitor.visitFunctionStatement(self)
+
+class ReturnStatement:
+    def __init__(self, ret_expression):
+        self.ret_expression = ret_expression
+        self.name = f"<return>"
+
+    def linkVisitor(self, visitor):
+        return visitor.visitReturnStatement(self)
+
+class ReturnException(Exception):
+    def __init__(self, ret_value, message="return value of function"):
+        self.message = message
+        self.ret_value = ret_value 
+        super().__init__(self.message)
 
 class WhileStatement:
     def __init__(self, expression, block_statement):
@@ -192,6 +209,11 @@ class StatementExecutor:
     def execute(self, statement):
         statement.linkVisitor(self)
 
+    def visitReturnStatement(self, return_statement):
+        calculator = Calculator(self.environment)
+        ret_value = calculator.calculate(return_statement.ret_expression)
+        raise ReturnException(ret_value)
+
     def visitFunctionStatement(self, function_statement):
         lox_function = LoxFunction(function_statement, self)
 
@@ -207,7 +229,7 @@ class StatementExecutor:
         if (calculator.calculate(if_statement.expression)):
             self.execute(if_statement.if_block_statement)
         elif(if_statement.else_block_statement):
-            print('inside else block {}')
+            # print('inside else block {}')
             self.execute(if_statement.else_block_statement)
 
     def visitBlockStatement(self, block_statement):
@@ -380,6 +402,10 @@ class ASTPrinter:
     def print(self, entity):
         return entity.linkVisitor(self)
 
+    def visitReturnStatement(self, return_statement):
+        ret_val = f"{return_statement.name} {self.print(return_statement.ret_expression)}"
+        return ret_val
+
     def visitFunctionStatement(self, function_statement):
         # print(f'insid printer->  {function_statement.params_list}')
         ret_val = "<func> " + function_statement.function_identifier_token.literal 
@@ -495,6 +521,9 @@ class Parser:
         if (while_statement := self.whileStatement()):
             return while_statement
 
+        if(return_statement := self.returnStatement()):
+            return return_statement
+
         if (function_statement := self.functionStatement()):
             return function_statement
 
@@ -548,6 +577,12 @@ class Parser:
                 return assignment_statement
             else:
                 raise Exception('var keyword must be followed by identifier, equals sign and a mandatory rvalue')
+
+    def returnStatement(self):
+        if (self.peek().tipe == TokenType.RETURN):
+            return_keyword = self.advance()
+            if (ret_expr := self.parseExpr()):
+                return ReturnStatement(ret_expr)
 
     def blockStatement(self):
         #block statement

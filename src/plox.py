@@ -1,6 +1,6 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str
+from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str, ASTPrinter
 from environment import Environment
 
 class Lox:
@@ -39,7 +39,6 @@ class Lox:
 		lox_interpreter = Lox()
 		lox_interpreter.run(source_code)
 		### add interpreter in prompt mode after this. if necessary arguments are passed
-
 	@staticmethod
 	def runPrompt():
 		lox_interpreter = Lox()
@@ -64,6 +63,8 @@ class Lox:
 		interpreter = StatementExecutor(self.environment)
 		for ast in parser.AST:
 			interpreter.execute(ast)
+			# print(ASTPrinter().print(ast))
+
 			
 
 	
