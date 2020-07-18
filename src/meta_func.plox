@@ -1,0 +1,33 @@
+#fun add_n(n) {
+#  fun ret_func(a) { 
+#      return a + n;
+#  };
+#  return ret_func;
+#};
+#var modified_func = add_n(5);
+#var another_func = add_n(10);
+#
+#print "modified func " + str(modified_func(10));
+#print "another func " + str(another_func(100));
+
+fun makeCounter() {
+  var i = 0;
+  print "print " + str(i);
+  fun count() {
+    i = i + 1;
+    print i;
+  };
+
+  return count;
+};
+
+var counter = makeCounter();
+counter(); # "1".
+counter(); # "2".
+
+print "another_counter";
+
+var another_counter = makeCounter();
+another_counter();
+another_counter(); 
+  
