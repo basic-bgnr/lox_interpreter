@@ -23,3 +23,7 @@ class Environment:
 			self.parent.putIfExists(lvalue, rvalue) # if the value is not found in current scope put it recursively in parent scope
 		else:
 			raise Exception(f"undefined variable '{lvalue}'")# raise exception if the global scope doesn't contain the variable
+
+
+	def __str__(self):
+		return f"{str(self.parent)} -> {str(self.hashmap)}"
