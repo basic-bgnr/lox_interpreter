@@ -1,0 +1,31 @@
+fun fib(n){
+    #print "inside fib, the value of n is " + str(n);
+    if n <=2 {
+        #print("n less than 2");
+        return 1;
+    };
+    var f1 = fib(n-1);
+    var f2 = fib(n-2);
+    return f1 + f2;
+    
+};
+
+fun print_till(n, func){
+    var counter = 1;
+    while counter <= n {
+        print "fib #" + str(counter) + " -> " + str(fib(counter));
+        counter += 1;
+    };
+    return 1;
+};
+var start_time = timer();
+print_till(20, fib);
+var end_time = timer();
+print "Time required: " + str((end_time -start_time)/1000000000) + " sec.";
+
+#var counter = 1;
+#while counter <= 10 {
+#    print "fib #" + str(counter) + " -> " + str(fib(counter));
+#    counter += 1;
+#};
+
