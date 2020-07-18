@@ -16,6 +16,11 @@
 #   what this pattern does is that at coding time create specific implementation of the data manipulation method and calls that 
 #   specific method from the polymorphic method `linkVisitor`, this function for each data class has specific function call
 #################################################################
+class ReturnException(Exception):
+    def __init__(self, ret_value, message="return value of function"):
+        self.message = message
+        self.ret_value = ret_value 
+        super().__init__(self.message)
 #########################native function call ##################
 
 class CallableFunction:
@@ -81,28 +86,33 @@ class Str(CallableFunction):
 ######################lox_fuction#######################
 class LoxFunction(CallableFunction):
     # params_list is list of tokens
-    def __init__(self, function_statement, executor):
-        self.environment = Environment(executor.environment)  
+    def __init__(self, function_statement):
         self.function_statement = function_statement
         #token.literal is variable name
-        executor.environment.put(function_statement.function_identifier_token.literal, self)
+        
         # print(f'inside lox function -> {self.environment.hashmap}, {executor.environment.hashmap}')
 
     def call(self, args):
+        
+        #create of copy of the this global loxfunction and carry out everything within its child environment 
+        #so as to make everything immutable when this function is called next time 
+        function_call_environment = Environment(self.environment)
+
         for param, arg in zip(self.function_statement.params_list, args):
-            self.environment.put(param.literal, arg)
+            function_call_environment.put(param.literal, arg)
 
         # print(f'inside lox call function -> {self.environment.hashmap}, {self.executor.environment.hashmap}')
+        #creates a new execution context
+        executor = StatementExecutor(function_call_environment)
 
-        executor = StatementExecutor(self.environment)
         try:
             executor.execute(self.function_statement.block_statement)
         except ReturnException as e:
             return e.ret_value
 
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
+    def register(self, environment):
+        self.environment = environment
+        environment.put(self.function_statement.function_identifier_token.literal, self)
 
     def arity(self):
         pass 
@@ -126,12 +136,6 @@ class ReturnStatement:
 
     def linkVisitor(self, visitor):
         return visitor.visitReturnStatement(self)
-
-class ReturnException(Exception):
-    def __init__(self, ret_value, message="return value of function"):
-        self.message = message
-        self.ret_value = ret_value 
-        super().__init__(self.message)
 
 class WhileStatement:
     def __init__(self, expression, block_statement):
@@ -215,7 +219,8 @@ class StatementExecutor:
         raise ReturnException(ret_value)
 
     def visitFunctionStatement(self, function_statement):
-        lox_function = LoxFunction(function_statement, self)
+        lox_function = LoxFunction(function_statement)
+        lox_function.register(self.environment) #function is registered one time only when executing the AST
 
 
     def visitWhileStatement(self, while_statement):
