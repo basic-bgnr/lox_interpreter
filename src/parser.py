@@ -93,10 +93,8 @@ class LoxFunction(CallableFunction):
         # print(f'inside lox function -> {self.environment.hashmap}, {executor.environment.hashmap}')
 
     def call(self, args):
-        
-        #create of copy of the this global loxfunction and carry out everything within its child environment 
-        #so as to make everything immutable when this function is called next time 
-        closure_environment = self.environment
+         
+        closure_environment = Environment(self.environment)
 
         for param, arg in zip(self.function_statement.params_list, args):
             closure_environment.put(param.literal, arg)
