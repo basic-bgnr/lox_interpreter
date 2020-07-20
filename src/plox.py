@@ -22,32 +22,40 @@ class Lox:
 	@staticmethod
 	def main():
 		if len(sys.argv) > 2:
-			print('usage: plox files')
+			if (sys.argv[2] == '-i'):
+				Lox.runFileInteractive(sys.argv[1], Lox())
+			else:
+				print('''usage: 
+					plox files [-i]
+					-i: run files in interactive mode''')
 			exit(64) #see open_bsd exit code (just for standardization)
 		elif len(sys.argv) == 2:
-			Lox.runFile(sys.argv[1])
+			Lox.runFile(sys.argv[1], Lox())
 
 		else:
-			Lox.runPrompt()
+			Lox.runPrompt(Lox())
 
 	@staticmethod
-	def runFile(path):
-		source_code = ''
+	def runFileInteractive(path, lox_interpreter):
+		Lox.runFile(path, lox_interpreter)
+		Lox.runPrompt(lox_interpreter)
+
+	@staticmethod
+	def runFile(path, lox_interpreter):
 		with open(path, mode='r') as content:
 			source_code = content.read()
-
-		lox_interpreter = Lox()
-		lox_interpreter.run(source_code)
+			lox_interpreter.run(source_code)
 		### add interpreter in prompt mode after this. if necessary arguments are passed
+	
 	@staticmethod
-	def runPrompt():
-		lox_interpreter = Lox()
+	def runPrompt(lox_interpreter):
 		while True:
 			print('>>', end=' ')
 			lox_interpreter.run(input())
 	
-	def run(self, program):
-		scanner = Scanner(program)
+	def run(self, source_code):
+		#why this runs, its because of the lox interpreter environment, which remains in existence even after this function ends 
+		scanner = Scanner(source_code)
 		scanner.scanTokens()
 		# print(scanner.toString())
 
