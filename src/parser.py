@@ -30,7 +30,7 @@ class CallableFunction:
         pass
     def arity(self):
         pass 
-    def call(self, args, closure_environment):
+    def call(self, args):
         pass
     
 
@@ -48,7 +48,7 @@ class NativeTimer(CallableFunction):
     def arity(self):
         return 0
         
-    def call(self, args, closure_environment=None):
+    def call(self, args):
         return self.func()
 
 
@@ -66,8 +66,9 @@ class Exit(CallableFunction):
     def arity(self):
         return 1
         
-    def call(self, args, closure_environment=None):
-        return self.func(args[0] if args else 0)
+    def call(self, args):
+        #head scratcher, arguments for sys.exit function must be of type int, i was using floats
+        return self.func(int(args[0] if args else 0))
 
 class Str(CallableFunction):
     def __init__(self):
@@ -80,7 +81,7 @@ class Str(CallableFunction):
     def arity(self):
         return 1
 
-    def call(self, args, closure_environment=None):
+    def call(self, args):
         return self.func(args[0] if args else "")
 ########################################################
 ######################lox_fuction#######################
