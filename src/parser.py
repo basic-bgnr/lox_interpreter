@@ -482,7 +482,7 @@ class ASTPrinter:
         recursive_values =  ' '.join([self.print(expression) for expression in expressions])
         return f"({operator} {recursive_values})"
 
-from lexer import TokenType, Scanner
+from lexer import TokenType, Scanner, Token
 class Parser:
     def __init__(self, token_list):
         self.token_list = token_list
@@ -495,7 +495,9 @@ class Parser:
 
     def parseProgram(self): #returns list statements
         AST = []
+        self.setCurrentAST(AST)
         while (self.peek().tipe != TokenType.EOF):
+            #this is executed every loop so as to prevent indirection to other intermediate AST list 
             statement = self.parseStatement()
             if (self.peek().tipe == TokenType.SEMICOLON):
                 self.advance()#consume the semicolon
@@ -514,6 +516,7 @@ class Parser:
         if (variable_statement := self.variableStatement()):
             return variable_statement
 
+        # important if you're looking for anon function 
         if (block_statement := self.blockStatement()):
             return block_statement
 
@@ -539,7 +542,9 @@ class Parser:
 
 
     def functionStatement(self):
-        if(self.peek().tipe == TokenType.FUN):
+        #the following conditional checks if it's normal function statement or anon function expression
+        #if identifier is provided after `fun` its function statement 
+        if(self.peek().tipe == TokenType.FUN and self.peekNext().tipe == TokenType.IDENTIFIER):
             function_token = self.advance() # consume the fun token 
             function_identifier_token = self.advance()
             left_paren = self.advance()
@@ -590,10 +595,17 @@ class Parser:
                 return ReturnStatement(ret_expr)
 
     def blockStatement(self):
+        #anon function requiremnt, whenever you enter a block get a reference to parent AST and at the end 
+        #setthe current AST to this parent ast
+
+        parent_ast = self.getCurrentAST()
         #block statement
         if(self.peek().tipe == TokenType.LEFT_BRACE):
             left_brace = self.advance() # consume the left brace
             statements = []
+            
+            self.setCurrentAST(statements)#useful for anon function 
+
             while (self.peek().tipe != TokenType.RIGHT_BRACE):
                 if (self.peek().tipe == TokenType.EOF):
                     raise Exception(f'Block statement not terminated by matching brace at line {left_brace.line}')
@@ -607,6 +619,8 @@ class Parser:
                     raise Exception(f'->statement not terminated at line {self.peek().line}')
 
             self.advance() # consume the right brace
+            #setting current AST to be the parent ast  
+            self.setCurrentAST(parent_ast)
             return BlockStatement(statements)
 
     def printStatement(self):
@@ -748,8 +762,19 @@ class Parser:
         
 
         return caller_expr
+    ############the folllowing function is defined in order to facilitate AST manipulation for anon function 
+    def getCurrentAST(self):
+        return self.current_AST
+
+    def setCurrentAST(self, current_AST):
+        self.current_AST = current_AST
+    ######################################################
+
 
     def literalExpr(self): # this needs to add support for bracketed expr or(group expression) as they have the same precedence as the literal number
+        if (anon_function  := self.anonFunctionExpr()):
+            return anon_function
+
         if (self.peek().tipe in [TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER, TokenType.TRUE, TokenType.FALSE]):
             literal_expr = self.advance()
             return LiteralExpression(literal_expr)
@@ -762,6 +787,47 @@ class Parser:
             else:
                 print('error no matching parenthesis found') #exception needs to be raised here
 
+    def anonFunctionExpr(self): # anon function declaration expression
+        # To do: needs to check user program for error in the following code 
+        if(self.peek().tipe == TokenType.FUN):
+            function_token = self.advance() # consume the fun token 
+            #this is an anonymous function declaration
+            function_identifier_token = Token(TokenType.IDENTIFIER, lexeme='', literal='', line=function_token.line)
+            function_identifier_token.literal = f"@{hash(function_identifier_token)}" # generate unique id for anonyous function
+            
+            left_paren = self.advance()
+            params_list = []
+            if (self.peek().tipe == TokenType.IDENTIFIER): #handles case of zero argument
+                arg = self.advance()
+                params_list.append(arg)
+
+            while(self.peek().tipe != TokenType.RIGHT_PAREN):
+                if (self.peek().tipe == TokenType.EOF):
+                    raise Exception(f"parenthesis is not terminated by matching parenthesis at line # {left_paren.line}")
+                
+                if(self.peek().tipe == TokenType.COMMA):
+                    self.advance() # consume comma
+                    if (self.peek().tipe == TokenType.IDENTIFIER):
+                        arg = self.advance()
+                        params_list.append(arg)
+                    else:
+                        raise Exception('function parameter must be identifier')
+                else:
+                    raise Exception(f"function argument must be separated by comma at line # {self.peek().line}")
+
+            self.advance()# consume right paren
+
+            block_statement = self.blockStatement()
+
+            # self.AST.append(FunctionStatement(function_identifier_token, params_list, block_statement))
+            #side effect
+            function_statement = FunctionStatement(function_identifier_token, params_list, block_statement)
+            self.getCurrentAST().append(function_statement)
+            #end side effect
+
+            return LiteralExpression(function_identifier_token)
+
+
     def advance(self):
         self.current += 1
         return self.token_list[self.current - 1]
@@ -771,6 +837,10 @@ class Parser:
 
     def peek(self):
         return self.token_list[self.current] if not self.isAtEnd() else TokenType.EOF
+
+    def peekNext(self):
+        return self.token_list[self.current+1] if not self.isAtEndwhere(n=self.current + 1) else TokenType.EOF
+
 
     def peekAndMatch(self, match_token):
         if (self.peek() == match_with_token):
@@ -783,6 +853,10 @@ class Parser:
 
     def isAtEnd(self):
         return self.current >= len(self.token_list)#check the type of the end item
+
+    #temporary helper functoin to facilitate peekNext() function
+    def isAtEndWhere(self, n):
+        return n >= len(self.token_list)
 
 
 
@@ -978,6 +1052,30 @@ def test_function_call_expression(source_code='''fun count(n) {
     };
     };
     count(4);
+    '''):
+
+    scanner = Scanner(source_code)
+    scanner.scanTokens()
+    # print(scanner.toString())
+
+
+    parser = Parser(scanner.token_list)
+    parser.parse()
+    # print(parser.AST)
+    # print(ASTPrinter().print(parser.AST[0]))
+    # print(ASTPrinter().print(parser.AST[1]))
+    print('------')
+    for AST in parser.AST:
+        print(ASTPrinter().print(AST))
+    print('-------')
+    env = Environment()
+    for AST in parser.AST:
+        StatementExecutor(env).execute(AST)
+
+
+
+def test_anon_function(source_code='''
+    print fun () { return "hello world!"; }();
     '''):
 
     scanner = Scanner(source_code)
