@@ -839,7 +839,7 @@ class Parser:
         return self.token_list[self.current] if not self.isAtEnd() else TokenType.EOF
 
     def peekNext(self):
-        return self.token_list[self.current+1] if not self.isAtEndwhere(n=self.current + 1) else TokenType.EOF
+        return self.token_list[self.current+1] if not self.isAtEndWhere(n=self.current + 1) else TokenType.EOF
 
 
     def peekAndMatch(self, match_token):
