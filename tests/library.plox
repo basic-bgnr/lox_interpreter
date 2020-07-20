@@ -1,0 +1,17 @@
+fun setTimeOut(func, time_ms){
+  var start = timer();
+  while (timer() - start)/1000000 < time_ms {
+  };
+  func();
+};
+
+
+var counter = 1;
+var time = 1000;
+var start = timer();
+while counter < 10 {
+  setTimeOut(fun() { print counter; }, time*counter);
+  counter += 1;
+};
+
+print "time : " + str((timer()-start)/1000000000) + " secs.";
