@@ -51,7 +51,10 @@ class Lox:
 	def runPrompt(lox_interpreter):
 		while True:
 			print('>>', end=' ')
-			lox_interpreter.run(input())
+			try:
+				lox_interpreter.run(input())
+			except Exception as e: 
+				print(e)
 	
 	def run(self, source_code):
 		#why this runs, its because of the lox interpreter environment, which remains in existence even after this function ends 
