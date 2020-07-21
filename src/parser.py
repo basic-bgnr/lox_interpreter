@@ -790,19 +790,18 @@ class Parser:
 
     def anonFunctionExpr(self): # anon function declaration expression
         # To do: needs to check user program for error in the following code 
-        if(self.peek().tipe == TokenType.FUN):
-            function_token = self.advance() # consume the fun token 
+        if(self.peek().tipe == TokenType.WALL):
+            function_token = self.advance() # consume the wall token 
             #this is an anonymous function declaration
             function_identifier_token = Token(TokenType.IDENTIFIER, lexeme='', literal='', line=function_token.line)
             function_identifier_token.literal = f"@{hash(function_identifier_token)}" # generate unique id for anonyous function
             
-            left_paren = self.advance()
             params_list = []
             if (self.peek().tipe == TokenType.IDENTIFIER): #handles case of zero argument
                 arg = self.advance()
                 params_list.append(arg)
 
-            while(self.peek().tipe != TokenType.RIGHT_PAREN):
+            while(self.peek().tipe != TokenType.WALL):
                 if (self.peek().tipe == TokenType.EOF):
                     raise Exception(f"parenthesis is not terminated by matching parenthesis at line # {left_paren.line}")
                 
@@ -1076,7 +1075,7 @@ def test_function_call_expression(source_code='''fun count(n) {
 
 
 def test_anon_function(source_code='''
-    print fun () { return "hello world!"; }();
+    print || { return "hello world!"; }();
     '''):
 
     scanner = Scanner(source_code)
