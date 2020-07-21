@@ -34,7 +34,11 @@ class Scanner:
 
 	def scanToken(self):
 		lexeme = self.advance()
-		if (lexeme == TokenType.LEFT_PAREN.value):
+		
+		if (lexeme == TokenType.WALL.value):
+			self.addToken(TokenType.WALL, '')
+
+		elif (lexeme == TokenType.LEFT_PAREN.value):
 		 	self.addToken(TokenType.LEFT_PAREN, '')
 
 		elif (lexeme == TokenType.RIGHT_PAREN.value):
@@ -238,6 +242,7 @@ class TokenType(Enum):
   SEMICOLON = ';'
   NEW_LINE = '\n'
   SEPARATOR = '_'
+  WALL = '|'
 
   #token to ignore
   TAB = '\t'
