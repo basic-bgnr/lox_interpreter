@@ -5,13 +5,35 @@ fun setTimeOut(func, time_ms){
   func();
 };
 
-
-var counter = 1;
-var time = 1000;
-var start = timer();
-while counter < 10 {
-  setTimeOut(|| { print counter; }, time*counter);
-  counter += 1;
+fun test_setTimeOut() {
+	var counter = 1;
+	var time = 1000;
+	var start = timer();
+	while counter < 10 {
+	  	setTimeOut(|| { print counter; }, time*counter);
+	  	counter += 1;
+	};
+	
+	print "time : " + str((timer()-start)/1000000000) + " secs.";
 };
 
-print "time : " + str((timer()-start)/1000000000) + " secs.";
+fun abs(n){
+    if n<0 { return -n;} else { return n; };
+};
+
+
+fun sqrt(a) {
+    var x = a/2;
+    var tolerance = 0.000_1;
+    while true {
+          var x_ = x - (x*x-a)/(2*x);
+          if abs(x_-x) < tolerance {
+                 return x_;
+          };
+          x = x_;
+    };
+};
+
+
+          
+          
