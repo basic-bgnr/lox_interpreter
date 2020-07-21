@@ -95,14 +95,23 @@ class LoxFunction(CallableFunction):
 
     def call(self, args):
          
-        closure_environment = Environment(self.environment)
+        call_environment = Environment(self.environment)
 
         for param, arg in zip(self.function_statement.params_list, args):
-            closure_environment.put(param.literal, arg)
+            call_environment.put(param.literal, arg)
+
+
+        
+        ##### make self available in call environment, referring to itself
+        # print('call ', TokenType.THIS.value, self)
+        call_environment.put(TokenType.THIS.value, self)
+        
+        #####
+
 
         # print(f'inside lox call function -> {self.environment.hashmap}, {self.executor.environment.hashmap}')
         #creates a new execution context
-        executor = StatementExecutor(closure_environment)
+        executor = StatementExecutor(call_environment)
         
         try:
             executor.execute(self.function_statement.block_statement)
@@ -338,7 +347,7 @@ class Calculator(ExpressionVisitor):
 
     def visitFunctionExpression(self, function_expression):
         caller_expr = self.calculate(function_expression.caller_expr)
-
+        # print("function expr ", caller_expr, " ", type(caller_expr), " ", isinstance(caller_expr, CallableFunction))
         if (isinstance(caller_expr, CallableFunction)):
             ret = caller_expr.call([self.calculate(arg) for arg in function_expression.args])
             return ret
@@ -398,7 +407,7 @@ class Calculator(ExpressionVisitor):
         elif (literal_expression.expr.tipe == TokenType.FALSE):
             return False
         #to do : add case for identifier variable, function call ...etc
-        elif (literal_expression.expr.tipe == TokenType.IDENTIFIER):
+        elif (literal_expression.expr.tipe in [TokenType.IDENTIFIER, TokenType.THIS] ):
             return self.environment.get(literal_expression.expr.literal)
 
         return literal_expression.value
@@ -581,9 +590,11 @@ class Parser:
             self.advance() # consume the var keyword
             #var must be initialized with value mandatorily
             lvalue = self.parseExpr() #self.advance()
+            # print(f'variableStatement -> {ASTPrinter().print(lvalue)}')
             if (self.peek().tipe == TokenType.EQUAL):
                 self.advance() # consume the equal sign
                 rvalue = self.parseExpr()
+                # print(f'variableStatement -> {ASTPrinter().print(rvalue)}')
                 assignment_statement = AssignmentStatement(lvalue, rvalue)
                 return assignment_statement
             else:
@@ -775,9 +786,9 @@ class Parser:
     def literalExpr(self): # this needs to add support for bracketed expr or(group expression) as they have the same precedence as the literal number
         if (anon_function  := self.anonFunctionExpr()):
             return anon_function
-
-        if (self.peek().tipe in [TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER, TokenType.TRUE, TokenType.FALSE]):
+        if (self.peek().tipe in [TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER, TokenType.TRUE, TokenType.FALSE, TokenType.THIS]):
             literal_expr = self.advance()
+            # print('literalExpr ', literal_expr.literal)
             return LiteralExpression(literal_expr)
         elif (self.peek().tipe == TokenType.LEFT_PAREN):
             self.advance() # consume the '(' token
@@ -786,7 +797,7 @@ class Parser:
                 self.advance() # consume the ')' token
                 return group_expr
             else:
-                print('error no matching parenthesis found') #exception needs to be raised here
+                Exception(f'error no matching parenthesis found at {self.peek().line}') #exception needs to be raised here
 
     def anonFunctionExpr(self): # anon function declaration expression
         # To do: needs to check user program for error in the following code 
@@ -1074,9 +1085,14 @@ def test_function_call_expression(source_code='''fun count(n) {
 
 
 
-def test_anon_function(source_code='''
-    print || { return "hello world!"; }();
-    '''):
+def test_anon_function(source_code='''var a =  |n| { 
+  if n<=2 { 
+    return 1; 
+  };
+  return this(n-1) + this(n-2); 
+};
+
+'''):
 
     scanner = Scanner(source_code)
     scanner.scanTokens()
