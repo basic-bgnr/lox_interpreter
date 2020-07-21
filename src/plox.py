@@ -8,6 +8,7 @@ class Lox:
 		self.had_error = False
 		self.environment = Environment()
 
+		self.prompt_signature = '#|>>'
 		### initialize native function####
 		timer = NativeTimer()
 		timer.register('timer', self.environment)
@@ -50,7 +51,7 @@ class Lox:
 	@staticmethod
 	def runPrompt(lox_interpreter):
 		while True:
-			print('>>', end=' ')
+			print(lox_interpreter.prompt_signature, end=' ')
 			try:
 				lox_interpreter.run(input())
 			except Exception as e: 
