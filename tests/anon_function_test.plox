@@ -2,7 +2,7 @@ fun test_anon_func(anon_func, parameters) {
     anon_func(parameters);
 };
 
-test_anon_func(fun (a) { print a; }, 2);
+test_anon_func(|a| { print a; }, 2);
 
 fun non_anon_func(a) {
     print "not anon func -> " + str(a);
@@ -18,6 +18,6 @@ fun thrice(fn){
    };
 };
 
-thrice(fun (a) { 
+thrice(|a| { 
 print a;
 });
