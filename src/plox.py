@@ -61,24 +61,18 @@ class Lox:
 		scanner = Scanner(source_code)
 		scanner.scanTokens()
 		# print(scanner.toString())
-
-
 		parser = Parser(scanner.token_list)
 		try:
 		    parser.parse()
 		except Exception as e:
 			print(e.args[0])
 			return
-
 		#print(Calculator().calculate(parser.AST))
 		interpreter = StatementExecutor(self.environment)
 		for ast in parser.AST:
 			interpreter.execute(ast)
 			# print(ASTPrinter().print(ast))
 
-			
-
-	
 	def error(self, line, err_msg):
 		report(line, "", err_msg) 
 
