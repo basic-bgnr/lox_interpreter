@@ -412,85 +412,8 @@ class Calculator(ExpressionVisitor):
 
         return literal_expression.value
 
-class ASTPrinter:
-    #statement are enclosed in <>
-    def print(self, entity):
-        return entity.linkVisitor(self)
-
-    def visitReturnStatement(self, return_statement):
-        ret_val = f"{return_statement.name} {self.print(return_statement.ret_expression)}"
-        return ret_val
-
-    def visitFunctionStatement(self, function_statement):
-        # print(f'insid printer->  {function_statement.params_list}')
-        ret_val = "<func> " + function_statement.function_identifier_token.literal 
-        ret_val += f"({','.join([arg.literal for arg in function_statement.params_list])}) "
-        ret_val += self.print(function_statement.block_statement)
-        return ret_val
-
-    def visitWhileStatement(self, while_statement):
-        ret_val = while_statement.name + ' ' + self.print(while_statement.expression) + '\n'
-        ret_val += self.print(while_statement.block_statement)
-        return ret_val
-
-    def visitIfStatement(self, if_statement):
-        ret_val = if_statement.name1 + ' ' + self.print(if_statement.expression) +'\n'
-        ret_val += self.print(if_statement.if_block_statement) + '\n'
-        if (else_block_statement := if_statement.else_block_statement):
-            ret_val += if_statement.name2 + '\n' 
-            ret_val += self.print(else_block_statement)
-        return ret_val
-
-    def visitBlockStatement(self, block_statement):
-        ret_val = block_statement.name + "{\n"
-        for statement in block_statement.statements:
-            ret_val += self.print(statement) + '\n'
-        ret_val += '}'
-        return ret_val
-
-    def visitAssignmentStatement(self, statement):
-        #below statement.lvalue.literal is used since statement.lvalue.lexeme contains entire alphanumeric characters
-        ret_val = f"{statement.name} {self.print(statement.lvalue)}, {self.print(statement.rvalue)}"
-        return ret_val
-
-    def visitReassignmentStatement(self, statement):
-        ret_val = f"{statement.name} {self.print(statement.lvalue)}, {self.print(statement.rvalue)}"
-        return ret_val
-
-    def visitPrintStatement(self, statement): 
-        # print('AST')
-        ret_val  = f"{statement.name} {self.print(statement.expr)}"
-        # print(ret_val)
-        return ret_val
-
-    def visitExprStatement(self, statement):
-        return f"{statement.name} {self.print(statement.expr)}"
-
-    def visitBinaryExpression(self, binary_expression):
-        return self.parenthesize(binary_expression.operator.lexeme,
-                                binary_expression.left,
-                                binary_expression.right)
-
-    def visitGroupingExpression(self, grouping_expression):
-        return self.parenthesize('group',
-                                grouping_expression.expression)
-
-    def visitUnaryExpression(self, unary_expression):
-        return self.parenthesize(unary_expression.operator.lexeme,
-                                unary_expression.right)
-
-    def visitFunctionExpression(self, function_expression):
-        return self.parenthesize(self.print(function_expression.caller_expr), *function_expression.args)
-
-    def visitLiteralExpression(self, literal_expression):
-        if (literal_expression.expr.tipe in [TokenType.NUMBER, TokenType.STRING, TokenType.IDENTIFIER]):
-            return str(literal_expression.value)
-        return literal_expression.expr.lexeme
 
 
-    def parenthesize(self, operator, *expressions):
-        recursive_values =  ' '.join([self.print(expression) for expression in expressions])
-        return f"({operator} {recursive_values})"
 
 from lexer import TokenType, Scanner, Token
 class Parser:
@@ -870,7 +793,7 @@ class Parser:
         return n >= len(self.token_list)
 
 
-
+from ASTPrinter import ASTPrinter
 def test_printer():
     from lexer import TokenType, Token
 
@@ -1120,22 +1043,30 @@ def test_anon_function(source_code='''var a =  |n| {
 #For the first pass of optimization, the code below provides solution for lexical resolution of
 #variables
 #scope stack are only used for local scope, global scope is managed by statementExecutor class 
+from collections import defaultdict
 class Ressolver: 
     def __init__(self):
         self.scope_stack = [] 
+        self.variable_location = {}
+
+    def peekStack(self):
+        return self.scope_stack[-1]
+
+    def isStackEmpty(self):
+        return len(self.scope_stack) == 0
 
     def resolve(self, statement):
         statement.linkVisitor(self)
 
     def beginScope(self):
-        self.scope_stack.append({})
+        #scope_stack # placeholder for variable defined within a scope, true = present, false = absent, default=absent
+        self.scope_stack.append(defaultdict(lambda : False))
 
     def endScope(self):
         return self.scope_stack.pop()
 
-    def declare(self):
-        pass 
-        
+    def define(self, name):
+        self.peekStack()[name] = True
 
     def visitBlockStatement(self, block_statement):
         self.beginScope()
@@ -1144,28 +1075,64 @@ class Ressolver:
         self.endScope()
 
     def visitReturnStatement(self, return_statement):
-        pass 
+        self.resolve(return_statement.expr) 
         
     def visitFunctionStatement(self, function_statement):
-        pass
+        
+        self.define(function_statement.function_identifier_token.literal)
+        self.beginScope()
+        for param in function_statement.params_list:
+            self.resolve(param)
+        self.resolve(function_statement.block_statement)
+        self.endScope()
+
         
     def visitWhileStatement(self, while_statement):
-        pass  
+        self.resolve(while_statement.expression)
+        self.resolve(while_statement.block_statement) 
 
     def visitIfStatement(self, if_statement):
-        pass
+        self.resolve(if_statement.expression)
+        self.resolve(if_statement.if_block_statement)
+        if (else_block := if_statement.else_block_statement):
+            self.resolve(else_block)
        
-    def visitAssignmentStatement(self, statement):
-        #self.declare(statement.lvalue) # we don't actually need declare, because variable needs to be defined, only declaring
-        #variable is syntax error in plox
-        self.resolve(statement.rvalue) # rvalue is expression 
+    def visitAssignmentStatement(self, assignment_statement):
+        self.assignmentHelper(assignment_statement)
         
+    def visitReassignmentStatement(self, reassignment_statement):
+        self.assignmentHelper(reassignment_statement)
+    
+    def assignmentHelper(self, statement):
+        self.resolve(statement.rvalue)
+        self.define(statement.lvalue.expr.literal) 
 
-    def visitReassignmentStatement(self, statement):
-        pass 
-      
-    def visitPrintStatement(self, statement):
-        pass
+    def visitPrintStatement(self, print_statement):
+        self.resolve(print_statement.expression)
 
-    def visitExprStatement(self, statement):
-        pass
+    def visitExprStatement(self, expression_statement):
+        self.resolve(expression_statement.expression) 
+
+    def visitFunctionExpression(self, function_expression):
+        self.resolve(function_expression.caller_expr)
+        for arg in function_expression.args:
+            self.resolve(arg)
+
+    def visitBinaryExpression(self, binary_expression):
+        # to do(completed): clean up the following conditional check about `lexeme` and replacement with `operator == TokenType.[PLUS, MINUS.....] directly
+        self.resolve(binary_expression.left)
+        self.resolve(binary_expression.right)
+
+
+    def visitUnaryExpression(self, unary_expression):
+        expr = unary_expression.right
+        self.resolve(expr)
+
+    def visitLiteralExpression(self, variable_expression):#variable_expression := literal_expression [number, string, identifier, true, false]
+        for (depth, stack_frame) in enumerate(self.scope_stack[-1::-1]):
+            #we're concerned only with Identifier, literal number, boolean and string are not evaluated
+            if (variable_expression.expr.tipe == TokenType.IDENTIFIER and stack_frame[variable_expression.expr.literal]):
+                self.variable_location[variable_expression] = depth #record the location of the variable in stack
+
+        #if none of the above match then the variable expression must be from global environment
+        #runtime error is raised if the expression is not found
