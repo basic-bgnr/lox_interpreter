@@ -1,6 +1,7 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str, ASTPrinter
+from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str
+from ASTPrinter import ASTPrinter
 from environment import Environment
 
 class Lox:
