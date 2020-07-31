@@ -1119,19 +1119,23 @@ def test_anon_function(source_code='''var a =  |n| {
 #in the form of pass(many passes are also possible) with specific function.
 #For the first pass of optimization, the code below provides solution for lexical resolution of
 #variables
-
+#scope stack are only used for local scope, global scope is managed by statementExecutor class 
 class Ressolver: 
     def __init__(self):
-        pass
+        self.scope_stack = [] 
 
     def resolve(self, statement):
         statement.linkVisitor(self)
 
     def beginScope(self):
-        pass 
+        self.scope_stack.append({})
 
     def endScope(self):
+        return self.scope_stack.pop()
+
+    def declare(self):
         pass 
+        
 
     def visitBlockStatement(self, block_statement):
         self.beginScope()
@@ -1152,7 +1156,10 @@ class Ressolver:
         pass
        
     def visitAssignmentStatement(self, statement):
-        pass 
+        #self.declare(statement.lvalue) # we don't actually need declare, because variable needs to be defined, only declaring
+        #variable is syntax error in plox
+        self.resolve(statement.rvalue) # rvalue is expression 
+        
 
     def visitReassignmentStatement(self, statement):
         pass 
