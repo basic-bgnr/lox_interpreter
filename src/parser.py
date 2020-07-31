@@ -1111,3 +1111,54 @@ def test_anon_function(source_code='''var a =  |n| {
     env = Environment()
     for AST in parser.AST:
         StatementExecutor(env).execute(AST)
+
+
+
+#the following class acts like a mini interpreter and perform static analysis of the plox code 
+#as with general optimization compiler, after generating the AST, static analysis are performed
+#in the form of pass(many passes are also possible) with specific function.
+#For the first pass of optimization, the code below provides solution for lexical resolution of
+#variables
+
+class Ressolver: 
+    def __init__(self):
+        pass
+
+    def resolve(self, statement):
+        statement.linkVisitor(self)
+
+    def beginScope(self):
+        pass 
+
+    def endScope(self):
+        pass 
+
+    def visitBlockStatement(self, block_statement):
+        self.beginScope()
+        for statement in block_statement.statements:
+            self.resolve(statement)
+        self.endScope()
+
+    def visitReturnStatement(self, return_statement):
+        pass 
+        
+    def visitFunctionStatement(self, function_statement):
+        pass
+        
+    def visitWhileStatement(self, while_statement):
+        pass  
+
+    def visitIfStatement(self, if_statement):
+        pass
+       
+    def visitAssignmentStatement(self, statement):
+        pass 
+
+    def visitReassignmentStatement(self, statement):
+        pass 
+      
+    def visitPrintStatement(self, statement):
+        pass
+
+    def visitExprStatement(self, statement):
+        pass
