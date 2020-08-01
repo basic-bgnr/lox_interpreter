@@ -8,10 +8,12 @@
 from collections import defaultdict
 from lexer import TokenType
 from ASTPrinter import ASTPrinter
+from parser import LiteralExpression
 class Resolver: 
     def __init__(self):
         self.scope_stack = [{}] 
         self.variable_location = {} #key pair, variable: stack_depth
+        
 
 
     def peekStack(self):
@@ -23,6 +25,10 @@ class Resolver:
     def resolve(self, statement):
         # print('entering  ', ASTPrinter().print(statement))
         statement.linkVisitor(self)
+
+    def resolveAll(self, statements):
+        for statement in statements:
+            self.resolve(statement)
 
     def beginScope(self):
         #scope_stack # placeholder for variable defined within a scope, true = present, false = absent, default=absent
@@ -55,10 +61,14 @@ class Resolver:
         
     def visitFunctionStatement(self, function_statement):
         # print('entering function')
-        self.define(function_statement.function_identifier_token.literal)
+        self.define(function_statement.function_identifier_expression.expr.literal)
+        self.resolve(function_statement.function_identifier_expression)
         self.beginScope()
+        # print(function_statement.params_list)
         for param in function_statement.params_list:
+            self.define(param.expr.literal)
             self.resolve(param)
+            
         self.resolve(function_statement.block_statement)
         self.endScope()
         # print('exiting function')
@@ -76,12 +86,17 @@ class Resolver:
        
     def visitAssignmentStatement(self, assignment_statement):
         self.resolve(assignment_statement.rvalue)
+        
         self.define(assignment_statement.lvalue.expr.literal)
+        self.resolve(assignment_statement.lvalue) # this is called to store recently defined variable in the 
+        #variable_location 
+        
+        
         # print('entering assignment ', self.scope_stack)
         
     def visitReassignmentStatement(self, reassignment_statement):
-        self.resolve(assignment_statement.rvalue)
-        self.resolve(assignment_statement.lvalue)
+        self.resolve(reassignment_statement.rvalue)
+        self.resolve(reassignment_statement.lvalue)
              
     def visitPrintStatement(self, print_statement):
         self.resolve(print_statement.expr)
@@ -114,7 +129,8 @@ class Resolver:
                     return
             
                 # raise Exception(f'undeclared variable used at {variable_expression.expr.line}')
-            raise Exception(f'undeclared variable used at {variable_expression.expr.line} {(variable_expression.expr.toString())}')
+            # raise Exception(f'undeclared variable used at {variable_expression.expr.line} {(variable_expression.expr.toString())}')
 
-        #if none of the above match then the variable expression must be from global environment
-        #runtime error is raised if the expression is not found
+            #if none of the above match then the variable expression must be from global environment
+            #runtime error is raised if the expression is not found
+
