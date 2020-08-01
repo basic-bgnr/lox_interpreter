@@ -245,16 +245,17 @@ def test_anon_function(source_code='''var a =  |n| {
         StatementExecutor(env).execute(AST)
 
 
-def resolver(source_code='''var a = "global";
-{
-  fun showA() {
-    print a;
-  };
+def test_resolver(source_code='''
+    var a = "global";
+    {
+      fun showA() {
+        print a;
+      };
 
-  showA();
-  var a = "block";
-  showA();
-};'''):
+      showA();
+      var a = "block";
+      showA();
+    };'''):
 
     scanner = Scanner(source_code)
     scanner.scanTokens()
@@ -266,23 +267,14 @@ def resolver(source_code='''var a = "global";
     # print(parser.AST)
     # print(ASTPrinter().print(parser.AST[0]))
     # print(ASTPrinter().print(parser.AST[1]))
-    print('------')
-    for AST in parser.AST:
-        print(ASTPrinter().print(AST))
-    print('-------')
+    # print('------')
+    # for AST in parser.AST:
+    #     print(ASTPrinter().print(AST))
+    # print('-------')
     
     resolver = Resolver()
+    resolver.resolveAll(parser.AST)
+
+    env = Environment()
     for AST in parser.AST:
-        resolver.resolve(AST)
-
-
-    # print(resolver.scope_stack)
-
-    for variable, depth in resolver.variable_location.items():
-        print(ASTPrinter().print(variable), ' -> ', depth)
-
-
-
-    # env = Environment()
-    # for AST in parser.AST:
-    #     StatementExecutor(env).execute(AST)
+        StatementExecutor(env, resolver).execute(AST)
