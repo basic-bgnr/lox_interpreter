@@ -3,11 +3,12 @@ from lexer import Scanner
 from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str
 from ASTPrinter import ASTPrinter
 from environment import Environment
-
+from resolver import Resolver
 class Lox:
 	def __init__(self):
 		self.had_error = False
 		self.environment = Environment()
+		self.resolver = Resolver()
 
 		self.prompt_signature = '#|>>'
 		### initialize native function####
@@ -64,13 +65,12 @@ class Lox:
 		scanner.scanTokens()
 		# print(scanner.toString())
 		parser = Parser(scanner.token_list)
-		try:
-		    parser.parse()
-		except Exception as e:
-			print(e.args[0])
-			return
+		parser.parse()
 		#print(Calculator().calculate(parser.AST))
-		interpreter = StatementExecutor(self.environment)
+		self.resolver.resolveAll(parser.AST)
+		
+
+		interpreter = StatementExecutor(self.environment, self.resolver)
 		for ast in parser.AST:
 			interpreter.execute(ast)
 			# print(ASTPrinter().print(ast))
