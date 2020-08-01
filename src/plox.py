@@ -1,6 +1,6 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str
+from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str, Random
 from ASTPrinter import ASTPrinter
 from environment import Environment
 from resolver import Resolver
@@ -20,6 +20,9 @@ class Lox:
 
 		string = Str()
 		string.register('str', self.environment) 
+
+		random = Random()
+		random.register('random', self.environment)
 		##################################
 	
 	@staticmethod

@@ -83,6 +83,24 @@ class Str(CallableFunction):
 
     def call(self, args, resolver=None):
         return self.func(args[0] if args else "")
+
+
+class Random(CallableFunction):
+    
+    def __init__(self):
+        import random
+        self.func = random.random
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, args, resolver=None):
+        return self.func()
 ########################################################
 ######################lox_fuction#######################
 class LoxFunction(CallableFunction):
