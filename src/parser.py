@@ -30,7 +30,7 @@ class CallableFunction:
         pass
     def arity(self):
         pass 
-    def call(self, args):
+    def call(self, args, resolver=None):
         pass
     
 
@@ -48,7 +48,7 @@ class NativeTimer(CallableFunction):
     def arity(self):
         return 0
         
-    def call(self, args):
+    def call(self, args, resolver=None):
         return self.func()
 
 
@@ -66,7 +66,7 @@ class Exit(CallableFunction):
     def arity(self):
         return 1
         
-    def call(self, args):
+    def call(self, args, resolver=None):
         #head scratcher, arguments for sys.exit function must be of type int, i was using floats
         return self.func(int(args[0] if args else 0))
 
@@ -81,7 +81,7 @@ class Str(CallableFunction):
     def arity(self):
         return 1
 
-    def call(self, args):
+    def call(self, args, resolver=None):
         return self.func(args[0] if args else "")
 ########################################################
 ######################lox_fuction#######################
@@ -93,12 +93,18 @@ class LoxFunction(CallableFunction):
         
         # print(f'inside lox function -> {self.environment.hashmap}, {executor.environment.hashmap}')
 
-    def call(self, args):
+    def call(self, args, resolver):
          
         call_environment = Environment(self.environment)
 
         for param, arg in zip(self.function_statement.params_list, args):
-            call_environment.put(param.literal, arg)
+            try:
+                index = resolver.variable_location[param]
+                call_environment.putAt(param.expr.literal, arg, index)
+            except KeyError:
+                call_environment.put(param.expr.literal, arg)
+
+            
 
 
         
@@ -111,7 +117,7 @@ class LoxFunction(CallableFunction):
 
         # print(f'inside lox call function -> {self.environment.hashmap}, {self.executor.environment.hashmap}')
         #creates a new execution context
-        executor = StatementExecutor(call_environment)
+        executor = StatementExecutor(call_environment, resolver)
         
         try:
             executor.execute(self.function_statement.block_statement)
@@ -122,15 +128,15 @@ class LoxFunction(CallableFunction):
 
     def register(self, environment):
         self.environment = environment
-        self.environment.put(self.function_statement.function_identifier_token.literal, self)
+        self.environment.put(self.function_statement.function_identifier_expression.expr.literal, self,)
 
     def arity(self):
         pass 
 
 ########################################################
 class FunctionStatement:
-    def __init__(self, function_identifier_token, params_list, block_statement):
-        self.function_identifier_token = function_identifier_token
+    def __init__(self, function_identifier_expression, params_list, block_statement):
+        self.function_identifier_expression = function_identifier_expression
         self.params_list = params_list #list of token
         self.block_statement = block_statement #BlockStatement
 
@@ -140,8 +146,8 @@ class FunctionStatement:
         return visitor.visitFunctionStatement(self)
 
 class ReturnStatement:
-    def __init__(self, ret_expression):
-        self.ret_expression = ret_expression
+    def __init__(self, expr):
+        self.expr = expr
         self.name = f"<return>"
 
     def linkVisitor(self, visitor):
@@ -216,16 +222,18 @@ class ExprStatement:
     def linkVisitor(self, visitor):
         return visitor.visitExprStatement(self)
 
+from environment import Environment
 class StatementExecutor:
-    def __init__(self, environment):
+    def __init__(self, environment, resolver):
         self.environment = environment
+        self.resolver = resolver
 
     def execute(self, statement):
         statement.linkVisitor(self)
 
     def visitReturnStatement(self, return_statement):
-        calculator = Calculator(self.environment)
-        ret_value = calculator.calculate(return_statement.ret_expression)
+        calculator = Calculator(self.environment, self.resolver)
+        ret_value = calculator.calculate(return_statement.expr)
         raise ReturnException(ret_value)
 
     def visitFunctionStatement(self, function_statement):
@@ -234,12 +242,14 @@ class StatementExecutor:
 
 
     def visitWhileStatement(self, while_statement):
-        calculator= Calculator(self.environment)
-        while (calculator.calculate(while_statement.expression)):
+        calculator= Calculator(self.environment, self.resolver)
+        while (cond := calculator.calculate(while_statement.expression)):
+            # print(ASTPrinter().print(while_statement.expression))
             self.execute(while_statement.block_statement)
+            # input()
 
     def visitIfStatement(self, if_statement):
-        calculator = Calculator(self.environment)
+        calculator = Calculator(self.environment, self.resolver)
 
         if (calculator.calculate(if_statement.expression)):
             self.execute(if_statement.if_block_statement)
@@ -248,30 +258,44 @@ class StatementExecutor:
             self.execute(if_statement.else_block_statement)
 
     def visitBlockStatement(self, block_statement):
-        block_executor = StatementExecutor(Environment(parent=self.environment))
+        block_executor = StatementExecutor(Environment(parent=self.environment), self.resolver)
         for statement in block_statement.statements:
             block_executor.execute(statement)
 
     def visitAssignmentStatement(self, statement):
-        calc = Calculator(self.environment)
+        calc = Calculator(self.environment, self.resolver)
         lvalue = statement.lvalue.expr.literal #get the name of the varible #this
         rvalue = calc.calculate(statement.rvalue)
-        self.environment.put(lvalue, rvalue)
+        # print("-->  ", self.resolver.variable_location)
+        # print(statement.lvalue)
+        try:
+            index = self.resolver.variable_location[statement.lvalue]
+            self.environment.putAt(lvalue, rvalue, index)
+        except KeyError:
+            self.environment.put(lvalue, rvalue)
+
+        
 
     def visitReassignmentStatement(self, statement):
-        calc = Calculator(self.environment)
+        calc = Calculator(self.environment, self.resolver)
         lvalue = statement.lvalue.expr.literal #get the name of the varible # this 
         rvalue = calc.calculate(statement.rvalue)
-        self.environment.putIfExists(lvalue, rvalue)
+        # self.environment.putIfExists(lvalue, rvalue)
+        try:
+            index = self.resolver.variable_location[statement.lvalue]
+            self.environment.putAt(lvalue, rvalue, index)
+        except KeyError:
+            self.environment.put(lvalue, rvalue)
+        
         #print(f'inside statement executor statements {statement.rvalue}   {statement.lvalue}')
         #print(f'inside statement executor {lvalue} -> {rvalue}')
 
 
     def visitPrintStatement(self, statement):
-        print(Calculator(self.environment).calculate(statement.expr))
+        print(Calculator(self.environment, self.resolver).calculate(statement.expr))
 
     def visitExprStatement(self, statement):
-        Calculator(self.environment).calculate(statement.expr)
+        Calculator(self.environment, self.resolver).calculate(statement.expr)
 
 #Implementation of Visitor Pattern for code simplification 
 class ExpressionVisitor:
@@ -338,9 +362,11 @@ class LiteralExpression:
 
     # def print(self):
     #   return str(self.value)
+from ASTPrinter import ASTPrinter
 class Calculator(ExpressionVisitor):
-    def __init__(self, environment):
+    def __init__(self, environment, resolver):
         self.environment = environment
+        self.resolver = resolver
 
     def calculate(self, expr):
         return expr.linkVisitor(self)
@@ -349,7 +375,7 @@ class Calculator(ExpressionVisitor):
         caller_expr = self.calculate(function_expression.caller_expr)
         # print("function expr ", caller_expr, " ", type(caller_expr), " ", isinstance(caller_expr, CallableFunction))
         if (isinstance(caller_expr, CallableFunction)):
-            ret = caller_expr.call([self.calculate(arg) for arg in function_expression.args])
+            ret = caller_expr.call([self.calculate(arg) for arg in function_expression.args], self.resolver)
             return ret
 
         raise Exception('non function called')
@@ -408,7 +434,13 @@ class Calculator(ExpressionVisitor):
             return False
         #to do : add case for identifier variable, function call ...etc
         elif (literal_expression.expr.tipe in [TokenType.IDENTIFIER, TokenType.THIS] ):
-            return self.environment.get(literal_expression.expr.literal)
+            # return self.environment.get(literal_expression.expr.literal)
+            # print("->>> ", ASTPrinter().print(literal_expression))
+            try:
+                index = self.resolver.variable_location[literal_expression]
+                return self.environment.getAt(literal_expression.expr.literal, index)
+            except KeyError:
+                return self.environment.get(literal_expression.expr.literal)
 
         return literal_expression.value
 
@@ -479,12 +511,12 @@ class Parser:
         #if identifier is provided after `fun` its function statement 
         if(self.peek().tipe == TokenType.FUN and self.peekNext().tipe == TokenType.IDENTIFIER):
             function_token = self.advance() # consume the fun token 
-            function_identifier_token = self.advance()
+            function_identifier_expression = LiteralExpression(self.advance())
             left_paren = self.advance()
             params_list = []
             if (self.peek().tipe == TokenType.IDENTIFIER): #handles case of zero argument
                 arg = self.advance()
-                params_list.append(arg)
+                params_list.append(LiteralExpression(arg))
 
             while(self.peek().tipe != TokenType.RIGHT_PAREN):
                 if (self.peek().tipe == TokenType.EOF):
@@ -494,7 +526,7 @@ class Parser:
                     self.advance() # consume comma
                     if (self.peek().tipe == TokenType.IDENTIFIER):
                         arg = self.advance()
-                        params_list.append(arg)
+                        params_list.append(LiteralExpression(arg))
                     else:
                         raise Exception('function parameter must be identifier')
                 else:
@@ -504,7 +536,7 @@ class Parser:
 
             block_statement = self.blockStatement()
 
-            return FunctionStatement(function_identifier_token, params_list, block_statement)
+            return FunctionStatement(function_identifier_expression, params_list, block_statement)
 
 
     def variableStatement(self):
@@ -729,11 +761,12 @@ class Parser:
             #this is an anonymous function declaration
             function_identifier_token = Token(TokenType.IDENTIFIER, lexeme='', literal='', line=function_token.line)
             function_identifier_token.literal = f"@{hash(function_identifier_token)}" # generate unique id for anonyous function
+            function_identifier_expression = LiteralExpression(function_identifier_token)
             
             params_list = []
             if (self.peek().tipe == TokenType.IDENTIFIER): #handles case of zero argument
                 arg = self.advance()
-                params_list.append(arg)
+                params_list.append(LiteralExpression(arg))
 
             while(self.peek().tipe != TokenType.WALL):
                 if (self.peek().tipe == TokenType.EOF):
@@ -743,7 +776,7 @@ class Parser:
                     self.advance() # consume comma
                     if (self.peek().tipe == TokenType.IDENTIFIER):
                         arg = self.advance()
-                        params_list.append(arg)
+                        params_list.append(LiteralExpression(arg))
                     else:
                         raise Exception('function parameter must be identifier')
                 else:
@@ -755,11 +788,11 @@ class Parser:
 
             # self.AST.append(FunctionStatement(function_identifier_token, params_list, block_statement))
             #side effect
-            function_statement = FunctionStatement(function_identifier_token, params_list, block_statement)
+            function_statement = FunctionStatement(function_identifier_expression, params_list, block_statement)
             self.getCurrentAST().append(function_statement)
             #end side effect
 
-            return LiteralExpression(function_identifier_token)
+            return function_identifier_expression
 
 
     def advance(self):
