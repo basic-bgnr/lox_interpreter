@@ -278,3 +278,34 @@ def test_resolver(source_code='''
     env = Environment()
     for AST in parser.AST:
         StatementExecutor(env, resolver).execute(AST)
+
+def test_resolver_loop(source_code='''
+    var counter = 0;
+    while counter <= 10 {
+    print counter;
+    counter += 1;
+    };
+    '''):
+
+    scanner = Scanner(source_code)
+    scanner.scanTokens()
+    # print(scanner.toString())
+
+
+    parser = Parser(scanner.token_list)
+    parser.parse()
+    # print(parser.AST)
+    # print(ASTPrinter().print(parser.AST[0]))
+    # print(ASTPrinter().print(parser.AST[1]))
+    print('------')
+    for AST in parser.AST:
+        print(ASTPrinter().print(AST))
+    print('-------')
+    
+    resolver = Resolver()
+    resolver.resolveAll(parser.AST)
+
+    env = Environment()
+    for AST in parser.AST:
+        StatementExecutor(env, resolver).execute(AST)
+
