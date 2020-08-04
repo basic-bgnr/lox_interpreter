@@ -1,6 +1,6 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str, Random
+from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str, Random, Array, InsertAt, DeleteAt, At, Len
 from ASTPrinter import ASTPrinter
 from environment import Environment
 from resolver import Resolver
@@ -23,6 +23,21 @@ class Lox:
 
 		random = Random()
 		random.register('random', self.environment)
+
+		array = Array()
+		array.register('array', self.environment)
+
+		insertAt = InsertAt()
+		insertAt.register('insertAt', self.environment)
+
+		deleteAt = DeleteAt()
+		deleteAt.register('deleteAt', self.environment)
+
+		at = At()
+		at.register('at', self.environment)
+
+		len_ = Len()
+		len_.register('len', self.environment)
 		##################################
 	
 	@staticmethod
@@ -76,7 +91,7 @@ class Lox:
 		interpreter = StatementExecutor(self.environment, self.resolver)
 		for ast in parser.AST:
 			interpreter.execute(ast)
-			# print(ASTPrinter().print(ast))
+			# print("AST-> ", ASTPrinter().print(ast))
 
 	def error(self, line, err_msg):
 		report(line, "", err_msg) 

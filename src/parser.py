@@ -66,7 +66,7 @@ class Exit(CallableFunction):
     def arity(self):
         return 1
         
-    def call(self, args, resolver=None):
+    def call(self, *args, resolver=None):
         #head scratcher, arguments for sys.exit function must be of type int, i was using floats
         return self.func(int(args[0] if args else 0))
 
@@ -101,6 +101,100 @@ class Random(CallableFunction):
         
     def call(self, args, resolver=None):
         return self.func()
+
+class Array(CallableFunction):
+    
+    def __init__(self):
+        import random
+        self.func = list
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        return self.func(args)
+
+class InsertAt(CallableFunction):
+    
+    def __init__(self):
+        import random
+        self.func = None
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        arg_one = args[0] #array object
+        arg_two = int(args[1]) #index
+        arg_three = args[2] # new object
+        arg_one[arg_two] = arg_three
+        # return self.func(args)
+
+class DeleteAt(CallableFunction):
+    
+    def __init__(self):
+        import random
+        self.func = None
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        arg_one = args[0] #array object
+        arg_two = int(args[1]) #index
+        del arg_one[arg_two]
+        # return self.func(args)
+
+class At(CallableFunction):
+    
+    def __init__(self):
+        import random
+        self.func = None
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        arg_one = args[0] #array object
+        arg_two = int(args[1]) #index
+        return arg_one[arg_two]
+
+class Len(CallableFunction):
+    
+    def __init__(self):
+        import random
+        self.func = len
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        return self.func(args[0])
 ########################################################
 ######################lox_fuction#######################
 class LoxFunction(CallableFunction):
@@ -310,7 +404,9 @@ class StatementExecutor:
 
 
     def visitPrintStatement(self, statement):
-        print(Calculator(self.environment, self.resolver).calculate(statement.expr))
+        print_object = Calculator(self.environment, self.resolver).calculate(statement.expr)
+        # print(type(print_object), " len ", len(print_object))
+        print(print_object)
 
     def visitExprStatement(self, statement):
         Calculator(self.environment, self.resolver).calculate(statement.expr)
@@ -393,7 +489,7 @@ class Calculator(ExpressionVisitor):
         caller_expr = self.calculate(function_expression.caller_expr)
         # print("function expr ", caller_expr, " ", type(caller_expr), " ", isinstance(caller_expr, CallableFunction))
         if (isinstance(caller_expr, CallableFunction)):
-            ret = caller_expr.call([self.calculate(arg) for arg in function_expression.args], self.resolver)
+            ret = caller_expr.call(*[self.calculate(arg) for arg in function_expression.args], resolver=self.resolver)
             return ret
 
         raise Exception('non function called')
