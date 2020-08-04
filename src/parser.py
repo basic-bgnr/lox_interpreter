@@ -30,7 +30,7 @@ class CallableFunction:
         pass
     def arity(self):
         pass 
-    def call(self, args, resolver=None):
+    def call(self, *args, resolver=None):
         pass
     
 
@@ -48,7 +48,7 @@ class NativeTimer(CallableFunction):
     def arity(self):
         return 0
         
-    def call(self, args, resolver=None):
+    def call(self, *args, resolver=None):
         return self.func()
 
 
@@ -81,7 +81,7 @@ class Str(CallableFunction):
     def arity(self):
         return 1
 
-    def call(self, args, resolver=None):
+    def call(self, *args, resolver=None):
         return self.func(args[0] if args else "")
 
 
@@ -99,7 +99,7 @@ class Random(CallableFunction):
     def arity(self):
         return 0
         
-    def call(self, args, resolver=None):
+    def call(self, *args, resolver=None):
         return self.func()
 
 class Array(CallableFunction):
@@ -195,6 +195,50 @@ class Len(CallableFunction):
         
     def call(self, *args, resolver=None):
         return self.func(args[0])
+
+class Push(CallableFunction):
+    
+    def __init__(self):
+        import random
+        self.func = None
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        arg_one = args[0] #array object
+        arg_two = args[1]
+
+        # print(arg_one)
+
+        arg_one.append(arg_two)
+        # print(arg_one)
+        # return self.func(args)
+
+class Pop(CallableFunction):
+    
+    def __init__(self):
+        import random
+        self.func = None
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        arg_one = args[0] #array object
+        return arg_one.pop()
+        # return self.func(args)
+
 ########################################################
 ######################lox_fuction#######################
 class LoxFunction(CallableFunction):
@@ -205,7 +249,7 @@ class LoxFunction(CallableFunction):
         
         # print(f'inside lox function -> {self.environment.hashmap}, {executor.environment.hashmap}')
 
-    def call(self, args, resolver):
+    def call(self, *args, resolver):
          
         call_environment = Environment(self.environment)
 
