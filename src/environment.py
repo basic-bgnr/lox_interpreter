@@ -4,6 +4,7 @@ class Environment:
 		self.parent = parent # this is for lexical scoping of variable
 
 	def putAt(self, lvalue, rvalue, index):
+		# print('putat ', '"lvalue" ',lvalue, '"rvalue"', rvalue, index)
 		if (index == 0):
 			self.put(lvalue, rvalue)
 		else:
@@ -12,13 +13,16 @@ class Environment:
 		self.hashmap[lvalue] = rvalue
 
 	def getAt(self, lvalue, index):
+		# print('getat index', index)
 		if (index == 0):
 			return self.get(lvalue)
 		else:
 			return self.parent.getAt(lvalue, index-1)
 	def get(self, lvalue):
+		# print('get', lvalue)
 		try:
 			ret_val = self.hashmap[lvalue]
+			# print('hashmap', self.hashmap)
 			return ret_val
 		except KeyError: # if not found in current environment search the parent environment for the needed variable
 			if (self.parent != None):
