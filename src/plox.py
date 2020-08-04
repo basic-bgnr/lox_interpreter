@@ -1,6 +1,6 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str, Random, Array, InsertAt, DeleteAt, At, Len
+from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str, Random, Array, InsertAt, DeleteAt, At, Len, Push, Pop
 from ASTPrinter import ASTPrinter
 from environment import Environment
 from resolver import Resolver
@@ -38,6 +38,12 @@ class Lox:
 
 		len_ = Len()
 		len_.register('len', self.environment)
+
+		push = Push()
+		push.register('push', self.environment)
+
+		pop = Pop()
+		pop.register('pop', self.environment)
 		##################################
 	
 	@staticmethod
