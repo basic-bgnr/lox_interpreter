@@ -393,11 +393,15 @@ class StatementExecutor:
         lvalue = statement.lvalue.expr.literal #get the name of the varible # this 
         rvalue = calc.calculate(statement.rvalue)
         # self.environment.putIfExists(lvalue, rvalue)
+        
         try:
             index = self.resolver.variable_location[statement.lvalue]
             self.environment.putAt(lvalue, rvalue, index)
         except KeyError:
-            self.environment.put(lvalue, rvalue)
+            raise Exception(f"variable is not defined {statement.lvalue.expr.line}")
+        
+
+            #self.environment.put(lvalue, rvalue)
         
         #print(f'inside statement executor statements {statement.rvalue}   {statement.lvalue}')
         #print(f'inside statement executor {lvalue} -> {rvalue}')
