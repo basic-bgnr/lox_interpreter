@@ -43,5 +43,14 @@ fun range(a, b) {
   };
   return return_obj;
 };
-          
-          
+
+fun map(func, lst) { 
+  var counter = 0;
+  var length = len(lst);
+  var output = array();
+  while counter < length {
+    push(output, func(at(lst, counter)));
+    counter += 1;
+  };
+  return output;  
+};
