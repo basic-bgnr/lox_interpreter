@@ -105,7 +105,6 @@ class Random(CallableFunction):
 class Array(CallableFunction):
     
     def __init__(self):
-        import random
         self.func = list
         self.name = ''
         
@@ -122,7 +121,6 @@ class Array(CallableFunction):
 class InsertAt(CallableFunction):
     
     def __init__(self):
-        import random
         self.func = None
         self.name = ''
         
@@ -143,7 +141,6 @@ class InsertAt(CallableFunction):
 class DeleteAt(CallableFunction):
     
     def __init__(self):
-        import random
         self.func = None
         self.name = ''
         
@@ -163,7 +160,6 @@ class DeleteAt(CallableFunction):
 class At(CallableFunction):
     
     def __init__(self):
-        import random
         self.func = None
         self.name = ''
         
@@ -182,7 +178,6 @@ class At(CallableFunction):
 class Len(CallableFunction):
     
     def __init__(self):
-        import random
         self.func = len
         self.name = ''
         
@@ -199,7 +194,6 @@ class Len(CallableFunction):
 class Push(CallableFunction):
     
     def __init__(self):
-        import random
         self.func = None
         self.name = ''
         
@@ -223,7 +217,6 @@ class Push(CallableFunction):
 class Pop(CallableFunction):
     
     def __init__(self):
-        import random
         self.func = None
         self.name = ''
         
@@ -238,6 +231,47 @@ class Pop(CallableFunction):
         arg_one = args[0] #array object
         return arg_one.pop()
         # return self.func(args)
+
+
+class ReadFile(CallableFunction):
+    
+    def __init__(self):
+        self.func = open
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        # print('reading file')
+        arg_one = args[0] #file location
+        with open(arg_one, 'r') as read_file:
+            content =  read_file.readlines()
+        return content
+        # return self.func(args)
+
+class WriteFile(CallableFunction):
+    
+    def __init__(self):
+        self.func = open
+        self.name = ''
+        
+    def register(self, name, environment):
+        self.name = name
+        environment.put(self.name, self)
+
+    def arity(self):
+        return 0
+        
+    def call(self, *args, resolver=None):
+        arg_one = args[0] #file location
+        arg_two = args[1] #file content
+        with self.func(arg_one, 'w') as write_file:
+            write_file.write(arg_two)
 
 ########################################################
 ######################lox_fuction#######################
