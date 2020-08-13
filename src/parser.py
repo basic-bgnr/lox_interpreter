@@ -323,6 +323,14 @@ class LoxFunction(CallableFunction):
     def arity(self):
         pass 
 
+#################################################################
+class ClassStatement():
+    def __init__(self, class_identifier_expression, function_statements):
+        self.class_name
+
+
+
+
 ########################################################
 class FunctionStatement:
     def __init__(self, function_identifier_expression, params_list, block_statement):
@@ -699,9 +707,29 @@ class Parser:
         if (expression_statement := self.expressionStatement()):
             return expression_statement
 
+        if (class_statement := self.classStatement()):
+            return class_statement
+
         raise Exception(f'Invalid statement at line {self.peek().line}')
 
 
+    def classStatement(self):
+        if (self.peek().tipe == TokenType.CLASS):
+            class_token = self.advance()
+            class_identifier_expression = LiteralExpression(self.advance())
+            left_paren = self.advance() # replace this with expect function to check whether there is left paren or not
+            function_statements = [] #store the function definition
+            while(self.peek().tipe != TokenType.RIGHT_PAREN):
+                if (self.peek().tipe == TokenType.EOF):
+                    raise Exception(f"parenthesis is not terminated by matching parenthesis at line # {left_paren.line}")
+
+                if(function_statement:= self.functionStatement()):
+                    function_statements.append(function_statement)
+
+            return ClassStatement(class_identifier_token, function_statements)
+
+
+                
     def functionStatement(self):
         #the following conditional checks if it's normal function statement or anon function expression
         #if identifier is provided after `fun` its function statement 
