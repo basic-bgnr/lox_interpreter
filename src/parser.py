@@ -326,7 +326,13 @@ class LoxFunction(CallableFunction):
 #################################################################
 class ClassStatement():
     def __init__(self, class_identifier_expression, function_statements):
-        self.class_name
+        self.class_identifier_expression = class_identifier_expression
+        self.function_statements = function_statements
+
+        self.name = "<class>"
+
+    def linkVisitor(self, visitor):
+        return visitor.visitClassStatement(self)
 
 
 
@@ -668,6 +674,7 @@ class Parser:
         while (self.peek().tipe != TokenType.EOF):
             #this is executed every loop so as to prevent indirection to other intermediate AST list 
             statement = self.parseStatement()
+            # print('statement  -> ', statement)
             if (self.peek().tipe == TokenType.SEMICOLON):
                 self.advance()#consume the semicolon
                 AST.append(statement)
@@ -704,29 +711,42 @@ class Parser:
         if (function_statement := self.functionStatement()):
             return function_statement
 
+        if (class_statement := self.classStatement()):
+            return class_statement
+        #here order is important, expression statement must come at last 
         if (expression_statement := self.expressionStatement()):
             return expression_statement
 
-        if (class_statement := self.classStatement()):
-            return class_statement
+        
 
         raise Exception(f'Invalid statement at line {self.peek().line}')
 
 
     def classStatement(self):
+        # print('in class statement')
         if (self.peek().tipe == TokenType.CLASS):
-            class_token = self.advance()
-            class_identifier_expression = LiteralExpression(self.advance())
-            left_paren = self.advance() # replace this with expect function to check whether there is left paren or not
+            class_token = self.advance() # consume class
+            # print('token ', class_token.toString())
+            class_identifier_token = self.advance()
+            # print('ident ', class_identifier_token.toString())
+            left_brace = self.advance() # replace this with expect function to check whether there is left paren or not
+            # print('left paren ', left_brace.toString())
             function_statements = [] #store the function definition
-            while(self.peek().tipe != TokenType.RIGHT_PAREN):
+            while(self.peek().tipe != TokenType.RIGHT_BRACE):
+                # print('right paren searching')
                 if (self.peek().tipe == TokenType.EOF):
                     raise Exception(f"parenthesis is not terminated by matching parenthesis at line # {left_paren.line}")
 
                 if(function_statement:= self.functionStatement()):
-                    function_statements.append(function_statement)
+                    if (self.peek().tipe == TokenType.SEMICOLON):
+                        function_statements.append(function_statement)
+                        self.advance() # consume the semicolon
+                    else:
+                        raise Exception(f'->statement not terminated at line {self.peek().line}')
 
-            return ClassStatement(class_identifier_token, function_statements)
+            self.advance() # consume the right brace
+
+            return ClassStatement(LiteralExpression(class_identifier_token), function_statements)
 
 
                 

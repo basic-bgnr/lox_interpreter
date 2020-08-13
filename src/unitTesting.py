@@ -309,3 +309,34 @@ def test_resolver_loop(source_code='''
     for AST in parser.AST:
         StatementExecutor(env, resolver).execute(AST)
 
+
+
+def test_class_declaration(source_code='''class simple{
+    fun add(){
+
+    };
+    
+    };'''):
+
+    scanner = Scanner(source_code)
+    scanner.scanTokens()
+    # print(scanner.toString())
+
+
+    parser = Parser(scanner.token_list)
+    parser.parse()
+    # print(parser.AST)
+    # print(ASTPrinter().print(parser.AST[0]))
+    # print(ASTPrinter().print(parser.AST[1]))
+    print('------')
+    for AST in parser.AST:
+        print(ASTPrinter().print(AST))
+    print('-------')
+    
+    # resolver = Resolver()
+    # resolver.resolveAll(parser.AST)
+
+    # env = Environment()
+    # for AST in parser.AST:
+    #     StatementExecutor(env, resolver).execute(AST)
+
