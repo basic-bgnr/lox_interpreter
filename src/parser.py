@@ -22,8 +22,7 @@ class ReturnException(Exception):
         self.ret_value = ret_value 
         super().__init__(self.message)
 #########################native function call ##################
-
-class CallableFunction:
+class CallableExpression:
     def __init__(self):
         pass
     def register(self, name, environment):
@@ -34,7 +33,7 @@ class CallableFunction:
         pass
     
 
-class NativeTimer(CallableFunction):
+class NativeTimer(CallableExpression):
     
     def __init__(self):
         import time
@@ -52,7 +51,7 @@ class NativeTimer(CallableFunction):
         return self.func()
 
 
-class Exit(CallableFunction):
+class Exit(CallableExpression):
     
     def __init__(self):
         import sys
@@ -70,7 +69,7 @@ class Exit(CallableFunction):
         #head scratcher, arguments for sys.exit function must be of type int, i was using floats
         return self.func(int(args[0] if args else 0))
 
-class Str(CallableFunction):
+class Str(CallableExpression):
     def __init__(self):
         self.func = str
         self.name = ''
@@ -85,7 +84,7 @@ class Str(CallableFunction):
         return self.func(args[0] if args else "")
 
 
-class Random(CallableFunction):
+class Random(CallableExpression):
     
     def __init__(self):
         import random
@@ -102,7 +101,7 @@ class Random(CallableFunction):
     def call(self, *args, resolver=None):
         return self.func()
 
-class Array(CallableFunction):
+class Array(CallableExpression):
     
     def __init__(self):
         self.func = list
@@ -118,7 +117,7 @@ class Array(CallableFunction):
     def call(self, *args, resolver=None):
         return self.func(args)
 
-class InsertAt(CallableFunction):
+class InsertAt(CallableExpression):
     
     def __init__(self):
         self.func = None
@@ -138,7 +137,7 @@ class InsertAt(CallableFunction):
         arg_one[arg_two] = arg_three
         # return self.func(args)
 
-class DeleteAt(CallableFunction):
+class DeleteAt(CallableExpression):
     
     def __init__(self):
         self.func = None
@@ -157,7 +156,7 @@ class DeleteAt(CallableFunction):
         del arg_one[arg_two]
         # return self.func(args)
 
-class At(CallableFunction):
+class At(CallableExpression):
     
     def __init__(self):
         self.func = None
@@ -175,7 +174,7 @@ class At(CallableFunction):
         arg_two = int(args[1]) #index
         return arg_one[arg_two]
 
-class Len(CallableFunction):
+class Len(CallableExpression):
     
     def __init__(self):
         self.func = len
@@ -191,7 +190,7 @@ class Len(CallableFunction):
     def call(self, *args, resolver=None):
         return self.func(args[0])
 
-class Push(CallableFunction):
+class Push(CallableExpression):
     
     def __init__(self):
         self.func = None
@@ -214,7 +213,7 @@ class Push(CallableFunction):
         # print(arg_one)
         # return self.func(args)
 
-class Pop(CallableFunction):
+class Pop(CallableExpression):
     
     def __init__(self):
         self.func = None
@@ -233,7 +232,7 @@ class Pop(CallableFunction):
         # return self.func(args)
 
 
-class ReadFile(CallableFunction):
+class ReadFile(CallableExpression):
     
     def __init__(self):
         self.func = open
@@ -254,7 +253,7 @@ class ReadFile(CallableFunction):
         return content
         # return self.func(args)
 
-class WriteFile(CallableFunction):
+class WriteFile(CallableExpression):
     
     def __init__(self):
         self.func = open
@@ -273,9 +272,29 @@ class WriteFile(CallableFunction):
         with self.func(arg_one, 'w') as write_file:
             write_file.write(arg_two)
 
-########################################################
+######################lox_class#######################
+class LoxClass(CallableExpression):
+    def __init__(self, class_statement):
+        self.class_statement = class_statement
+
+    def call(self, *args, resolver):
+        # return LoxInstance(self, args)
+        return f"{self.class_statement.class_identifier_expression.expr.literal} class string value only"
+# 
+    def register(self, environment):
+        self.environment = environment
+        self.environment.put(self.class_statement.class_identifier_expression.expr.literal, self,)
+
+    def arity(self):
+        pass 
+
+class LoxInstance:
+    def __init__(self, lox_class, args):
+        self.lox_class = lox_class
+        self.args = args
+
 ######################lox_fuction#######################
-class LoxFunction(CallableFunction):
+class LoxFunction(CallableExpression):
     # params_list is list of tokens
     def __init__(self, function_statement):
         self.function_statement = function_statement
@@ -435,6 +454,11 @@ class StatementExecutor:
     def execute(self, statement):
         statement.linkVisitor(self)
 
+    def visitClassStatement(self, class_statement):
+        lox_class = LoxClass(class_statement)
+        lox_class.register(self.environment)
+
+
     def visitReturnStatement(self, return_statement):
         calculator = Calculator(self.environment, self.resolver)
         ret_value = calculator.calculate(return_statement.expr)
@@ -550,7 +574,7 @@ class FunctionExpression:
         self.args = args
 
     def linkVisitor(self, visitor):
-        return visitor.visitFunctionExpression(self)
+        return visitor.visitCallableExpression(self)
 
 class GroupingExpression:
     def __init__(self, expression):
@@ -581,13 +605,13 @@ class Calculator(ExpressionVisitor):
     def calculate(self, expr):
         return expr.linkVisitor(self)
 
-    def visitFunctionExpression(self, function_expression):
-        caller_expr = self.calculate(function_expression.caller_expr)
-        # print("function expr ", caller_expr, " ", type(caller_expr), " ", isinstance(caller_expr, CallableFunction))
-        if (isinstance(caller_expr, CallableFunction)):
-            ret = caller_expr.call(*[self.calculate(arg) for arg in function_expression.args], resolver=self.resolver)
+    #calculates function and class expression
+    def visitCallableExpression(self, callable_expression):
+        caller_expr = self.calculate(callable_expression.caller_expr)
+        # print("function expr ", caller_expr, " ", type(caller_expr), " ", isinstance(caller_expr, CallableExpression))
+        if (isinstance(caller_expr, CallableExpression)):
+            ret = caller_expr.call(*[self.calculate(arg) for arg in callable_expression.args], resolver=self.resolver)
             return ret
-
         raise Exception('non function called')
 
     def visitBinaryExpression(self, binary_expression):
@@ -743,6 +767,8 @@ class Parser:
                         self.advance() # consume the semicolon
                     else:
                         raise Exception(f'->statement not terminated at line {self.peek().line}')
+                else:
+                    raise Exception(f"non allowed statement at line {self.peek().line}")
 
             self.advance() # consume the right brace
 
