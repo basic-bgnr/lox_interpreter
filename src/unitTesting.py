@@ -311,12 +311,14 @@ def test_resolver_loop(source_code='''
 
 
 
-def test_class_declaration(source_code='''class simple{
+def test_class_declaration(source_code='''class Simple{
     fun add(){
 
     };
-    
-    };'''):
+    };
+    var a = Simple();
+    print a;
+    '''):
 
     scanner = Scanner(source_code)
     scanner.scanTokens()
@@ -333,10 +335,10 @@ def test_class_declaration(source_code='''class simple{
         print(ASTPrinter().print(AST))
     print('-------')
     
-    # resolver = Resolver()
-    # resolver.resolveAll(parser.AST)
+    resolver = Resolver()
+    resolver.resolveAll(parser.AST)
 
-    # env = Environment()
-    # for AST in parser.AST:
-    #     StatementExecutor(env, resolver).execute(AST)
+    env = Environment()
+    for AST in parser.AST:
+        StatementExecutor(env, resolver).execute(AST)
 
