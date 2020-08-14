@@ -72,8 +72,8 @@ class ASTPrinter:
         return self.parenthesize(unary_expression.operator.lexeme,
                                 unary_expression.right)
 
-    def visitFunctionExpression(self, function_expression):
-        return self.parenthesize(self.print(function_expression.caller_expr), *function_expression.args)
+    def visitCallableExpression(self, callable_expression):
+        return self.parenthesize(self.print(callable_expression.caller_expr), *callable_expression.args)
 
     def visitLiteralExpression(self, literal_expression):
         if (literal_expression.expr.tipe in [TokenType.NUMBER, TokenType.STRING, TokenType.IDENTIFIER]):
