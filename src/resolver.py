@@ -40,6 +40,11 @@ class Resolver:
 
     def define(self, name):
         self.peekStack()[name] = True
+
+    def visitClassStatement(self, class_statement):
+        #first define it so that we can use it within itself
+        self.define(class_statement.class_identifier_expression.expr.literal)
+        self.resolve(class_statement.class_identifier_expression)
         
 
     def visitBlockStatement(self, block_statement):
@@ -104,9 +109,9 @@ class Resolver:
     def visitExprStatement(self, expression_statement):
         self.resolve(expression_statement.expr) 
 
-    def visitFunctionExpression(self, function_expression):
-        self.resolve(function_expression.caller_expr)
-        for arg in function_expression.args:
+    def visitCallableExpression(self, callable_expression):
+        self.resolve(callable_expression.caller_expr)
+        for arg in callable_expression.args:
             self.resolve(arg)
 
     def visitBinaryExpression(self, binary_expression):
