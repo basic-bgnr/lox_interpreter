@@ -1,7 +1,7 @@
 import sys
 from lexer import Scanner
 from parser import Parser, Calculator, StatementExecutor
-from NativeCalls import NativeTimer, Exit, Str, Random, Array, InsertAt, DeleteAt, At, Len, Push, Pop, ReadFile, WriteFile, ArrayListClass
+from NativeCalls import NativeTimer, Exit, Str, Random, ReadFile, WriteFile, ArrayListClass
 from ASTPrinter import ASTPrinter
 from environment import Environment
 from resolver import Resolver
@@ -25,27 +25,6 @@ class Lox:
         random = Random()
         random.register('random', self.environment)
 
-        array = Array()
-        array.register('array', self.environment)
-
-        insert_at = InsertAt()
-        insert_at.register('insertAt', self.environment)
-
-        delete_at = DeleteAt()
-        delete_at.register('deleteAt', self.environment)
-
-        at = At()
-        at.register('at', self.environment)
-
-        len_ = Len()
-        len_.register('len', self.environment)
-
-        push = Push()
-        push.register('push', self.environment)
-
-        pop = Pop()
-        pop.register('pop', self.environment)
-
         read_file = ReadFile()
         read_file.register('readFile', self.environment)
 
@@ -53,7 +32,7 @@ class Lox:
         write_file.register('writeFile', self.environment)
 
         array_list = ArrayListClass()
-        array_list.register('ArrayList', self.environment)
+        array_list.register('Array', self.environment)
     
     @staticmethod
     def main():
