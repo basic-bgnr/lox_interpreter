@@ -4,14 +4,18 @@ class ASTPrinter:
     def print(self, entity):
         return entity.linkVisitor(self)
 
+    def visitGetExpression(self, get_expression):
+        return f"(get {self.print(get_expression.obj)}.{get_expression.prop_or_method.literal})"
+
     def visitClassStatement(self, class_statement):
         ret_val = f"{class_statement.name} {self.print(class_statement.class_identifier_expression)}" + '{\n'
+        ret_val += '\n'.join([self.print(variable) for variable in class_statement.variable_statements]) + '\n'
         ret_val += '\n'.join([self.print(function) for function in class_statement.function_statements])
         ret_val += '\n}'
         return ret_val
 
     def visitReturnStatement(self, return_statement):
-        ret_val = f"{return_statement.name} {self.print(return_statement.ret_expression)}"
+        ret_val = f"{return_statement.name} {self.print(return_statement.expr)}"
         return ret_val
 
     def visitFunctionStatement(self, function_statement):
