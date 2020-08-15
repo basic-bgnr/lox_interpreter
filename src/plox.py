@@ -1,6 +1,7 @@
 import sys
 from lexer import Scanner
-from parser import Parser, Calculator, StatementExecutor, NativeTimer, Exit, Str, Random, Array, InsertAt, DeleteAt, At, Len, Push, Pop, ReadFile, WriteFile
+from parser import Parser, Calculator, StatementExecutor
+from NativeCalls import NativeTimer, Exit, Str, Random, Array, InsertAt, DeleteAt, At, Len, Push, Pop, ReadFile, WriteFile, ArrayListClass
 from ASTPrinter import ASTPrinter
 from environment import Environment
 from resolver import Resolver
@@ -50,6 +51,9 @@ class Lox:
 
         write_file = WriteFile()
         write_file.register('writeFile', self.environment)
+
+        array_list = ArrayListClass()
+        array_list.register('ArrayList', self.environment)
     
     @staticmethod
     def main():
