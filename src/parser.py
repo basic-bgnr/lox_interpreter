@@ -79,8 +79,9 @@ class LoxInstance:
         except KeyError:
             raise Exception(f"no property named {prop.literal} in instance of {self.lox_class.class_statement.class_identifier_expression.expr.literal} at line {prop.line}")
 
-    def setMethodsProperties(self, lvalue, rvalue):
-        self.methods_properties[lvalue] = rvalue
+    def setMethodsProperties(self, prop, rvalue):
+        literal = prop.literal #get the property variable name 
+        self.methods_properties[literal] = rvalue
 
 ######################lox_fuction#######################
 
@@ -308,6 +309,19 @@ class StatementExecutor:
 
     def visitReassignmentStatement(self, statement):
         calc = Calculator(self.environment, self.resolver)
+
+        #check if the reassignment statement deals with object properties
+        if (isinstance(statement.lvalue, GetExpression)):
+            obj = statement.lvalue.expr
+            prop = statement.lvalue.prop_or_method # this is token
+            
+            lvalue = calc.calculate(obj)
+            rvalue = calc.calculate(statement.rvalue)
+
+            lvalue.setMethodsProperties(prop, rvalue)
+            return
+
+        
         lvalue = statement.lvalue.expr.literal #get the name of the varible # this 
         rvalue = calc.calculate(statement.rvalue)
         # self.environment.putIfExists(lvalue, rvalue)
@@ -390,8 +404,8 @@ class GroupingExpression:
 
 class GetExpression:
     #obj: LiteralExpression, prop_or_method: Token
-    def __init__(self, obj, prop_or_method):
-        self.obj = obj
+    def __init__(self, expr, prop_or_method):
+        self.expr = expr
         self.prop_or_method = prop_or_method
 
     def linkVisitor(self, visitor):
@@ -417,7 +431,7 @@ class Calculator(ExpressionVisitor):
         return expr.linkVisitor(self)
 
     def visitGetExpression(self, get_expr):
-        lox_instance = self.calculate(get_expr.obj)
+        lox_instance = self.calculate(get_expr.expr)
         # print('visit get ', lox_instance)
         if(isinstance(lox_instance, LoxInstance)):
             return lox_instance.getMethodsProperties(get_expr.prop_or_method) # pass token as argument
@@ -698,29 +712,30 @@ class Parser:
     def expressionStatement(self):
         lvalue = self.parseExpr()
         if (self.peek().tipe in [TokenType.EQUAL, TokenType.MINUS_EQUAL, TokenType.PLUS_EQUAL, TokenType.STAR_EQUAL, TokenType.SLASH_EQUAL]): # this is reassignment statement
-            if (lvalue.expr.tipe == TokenType.IDENTIFIER): #check if the lvalue is assignable variable
-                operator = self.advance() # consume the sign
-                rvalue = self.parseExpr()
-                if (operator.tipe == TokenType.EQUAL):
-                    return ReassignmentStatement(lvalue, rvalue)
-                ### the following procedure replaces the double token with their equivalent single token operator and at the 
-                ### end carry out syntactic operation of binaryExpression and return it as
-                if (operator.tipe == TokenType.PLUS_EQUAL):
-                    operator.tipe = TokenType.PLUS 
+        #the or operator is there to check for obj.propery reassignment expression
+            #if (lvalue.expr.tipe == TokenType.IDENTIFIER ): #check if the lvalue is assignable variable
+            operator = self.advance() # consume the sign
+            rvalue = self.parseExpr()
+            if (operator.tipe == TokenType.EQUAL):
+                return ReassignmentStatement(lvalue, rvalue)
+            ### (syntactic sugar)the following procedure replaces the double token with their equivalent single token operator and at the 
+            ### end carry out syntactic operation of binaryExpression and return it as
+            if (operator.tipe == TokenType.PLUS_EQUAL):
+                operator.tipe = TokenType.PLUS 
 
-                if (operator.tipe == TokenType.MINUS_EQUAL):
-                    operator.tipe = TokenType.MINUS 
+            if (operator.tipe == TokenType.MINUS_EQUAL):
+                operator.tipe = TokenType.MINUS 
 
-                if (operator.tipe == TokenType.STAR_EQUAL):
-                    operator.tipe = TokenType.STAR
+            if (operator.tipe == TokenType.STAR_EQUAL):
+                operator.tipe = TokenType.STAR
 
-                if (operator.tipe == TokenType.SLASH_EQUAL):
-                    operator.tipe = TokenType.SLASH
+            if (operator.tipe == TokenType.SLASH_EQUAL):
+                operator.tipe = TokenType.SLASH
 
-                syntactic_expression  = BinaryExpression(lvalue, operator, rvalue)
-                return ReassignmentStatement(lvalue, syntactic_expression)
-            else:
-                raise Exception("non assignable target")
+            syntactic_expression  = BinaryExpression(lvalue, operator, rvalue)
+            return ReassignmentStatement(lvalue, syntactic_expression)
+            # else:
+            #     raise Exception("non assignable target")
         else: #if there is no equlity sign then it must be expression statement 
             return ExprStatement(lvalue)
 

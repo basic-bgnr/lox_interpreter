@@ -344,3 +344,39 @@ def test_class_declaration(source_code='''class Simple{
     for AST in parser.AST:
         StatementExecutor(env, resolver).execute(AST)
 
+
+def test_set_property_class(source_code='''
+    class Simple { 
+        var a = 100;
+        fun Simple(){
+
+        };
+    };
+    var s = Simple();
+    print s.a;
+
+    s.a = 200;
+
+    print s.a;
+
+    print (s.b + 500);
+    '''):
+
+    scanner = Scanner(source_code)
+    scanner.scanTokens()
+    # print(scanner.toString())
+
+
+    parser = Parser(scanner.token_list)
+    parser.parse()
+    
+    for AST in parser.AST:
+        print(ASTPrinter().print(AST))
+    print('-------')
+    
+    resolver = Resolver()
+    resolver.resolveAll(parser.AST)
+
+    env = Environment()
+    for AST in parser.AST:
+        StatementExecutor(env, resolver).execute(AST)

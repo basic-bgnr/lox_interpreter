@@ -5,7 +5,7 @@ class ASTPrinter:
         return entity.linkVisitor(self)
 
     def visitGetExpression(self, get_expression):
-        return f"(get {self.print(get_expression.obj)}.{get_expression.prop_or_method.literal})"
+        return f"(get {self.print(get_expression.expr)}.{get_expression.prop_or_method.literal})"
 
     def visitClassStatement(self, class_statement):
         ret_val = f"{class_statement.name} {self.print(class_statement.class_identifier_expression)}" + '{\n'

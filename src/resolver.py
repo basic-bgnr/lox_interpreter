@@ -42,7 +42,7 @@ class Resolver:
         self.peekStack()[name] = True
 
     def visitGetExpression(self, get_expression):
-        self.resolve(get_expression.obj) # this just transverses the get_expression
+        self.resolve(get_expression.expr) # this just transverses the get_expression
 
     def visitClassStatement(self, class_statement):
         #first define it so that we can use it within itself
