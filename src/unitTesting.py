@@ -312,12 +312,17 @@ def test_resolver_loop(source_code='''
 
 
 def test_class_declaration(source_code='''class Simple{
-    fun add(){
+        var a = 23;
+        var b = 100;
+        fun Simple(){
 
+        };
     };
-    };
-    var a = Simple();
-    print a;
+    var s = Simple();
+    var c = Simple();
+
+    print "inside program";
+    print c;
     '''):
 
     scanner = Scanner(source_code)
@@ -327,10 +332,7 @@ def test_class_declaration(source_code='''class Simple{
 
     parser = Parser(scanner.token_list)
     parser.parse()
-    # print(parser.AST)
-    # print(ASTPrinter().print(parser.AST[0]))
-    # print(ASTPrinter().print(parser.AST[1]))
-    print('------')
+    
     for AST in parser.AST:
         print(ASTPrinter().print(AST))
     print('-------')
