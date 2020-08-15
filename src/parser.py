@@ -32,254 +32,18 @@ class CallableExpression:
     def call(self, *args, resolver=None):
         pass
     
-
-class NativeTimer(CallableExpression):
-    
-    def __init__(self):
-        import time
-        self.func = time.time_ns
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        return self.func()
-
-
-class Exit(CallableExpression):
-    
-    def __init__(self):
-        import sys
-        self.func = sys.exit
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 1
-        
-    def call(self, *args, resolver=None):
-        #head scratcher, arguments for sys.exit function must be of type int, i was using floats
-        return self.func(int(args[0] if args else 0))
-
-class Str(CallableExpression):
-    def __init__(self):
-        self.func = str
-        self.name = ''
-
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-    def arity(self):
-        return 1
-
-    def call(self, *args, resolver=None):
-        return self.func(args[0] if args else "")
-
-
-class Random(CallableExpression):
-    
-    def __init__(self):
-        import random
-        self.func = random.random
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        return self.func()
-
-class Array(CallableExpression):
-    
-    def __init__(self):
-        self.func = list
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        return self.func(args)
-
-class InsertAt(CallableExpression):
-    
-    def __init__(self):
-        self.func = None
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        arg_one = args[0] #array object
-        arg_two = int(args[1]) #index
-        arg_three = args[2] # new object
-        arg_one[arg_two] = arg_three
-        # return self.func(args)
-
-class DeleteAt(CallableExpression):
-    
-    def __init__(self):
-        self.func = None
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        arg_one = args[0] #array object
-        arg_two = int(args[1]) #index
-        del arg_one[arg_two]
-        # return self.func(args)
-
-class At(CallableExpression):
-    
-    def __init__(self):
-        self.func = None
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        arg_one = args[0] #array object
-        arg_two = int(args[1]) #index
-        return arg_one[arg_two]
-
-class Len(CallableExpression):
-    
-    def __init__(self):
-        self.func = len
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        return self.func(args[0])
-
-class Push(CallableExpression):
-    
-    def __init__(self):
-        self.func = None
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        arg_one = args[0] #array object
-        arg_two = args[1]
-
-        # print(arg_one)
-
-        arg_one.append(arg_two)
-        # print(arg_one)
-        # return self.func(args)
-
-class Pop(CallableExpression):
-    
-    def __init__(self):
-        self.func = None
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        arg_one = args[0] #array object
-        return arg_one.pop()
-        # return self.func(args)
-
-
-class ReadFile(CallableExpression):
-    
-    def __init__(self):
-        self.func = open
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        # print('reading file')
-        arg_one = args[0] #file location
-        with open(arg_one, 'r') as read_file:
-            content =  read_file.readlines()
-        return content
-        # return self.func(args)
-
-class WriteFile(CallableExpression):
-    
-    def __init__(self):
-        self.func = open
-        self.name = ''
-        
-    def register(self, name, environment):
-        self.name = name
-        environment.put(self.name, self)
-
-    def arity(self):
-        return 0
-        
-    def call(self, *args, resolver=None):
-        arg_one = args[0] #file location
-        arg_two = args[1] #file content
-        with self.func(arg_one, 'w') as write_file:
-            write_file.write(arg_two)
-
 ######################lox_class#######################
 class LoxClass(CallableExpression):
     def __init__(self, class_statement):
         self.class_statement = class_statement
 
     def call(self, *args, resolver):
-        # return LoxInstance(self, args)
-        return f"{self.class_statement.class_identifier_expression.expr.literal} class string value only"
+        ret_instance = LoxInstance(self, args, self.environment, resolver)
+        constructor_function = ret_instance.methods_properties[self.class_statement.class_identifier_expression.expr.literal]
+
+        constructor_function.call(*args, resolver = resolver)
+        return ret_instance
+        #return f"{self.class_statement.class_identifier_expression.expr.literal} class string value only"
 # 
     def register(self, environment):
         self.environment = environment
@@ -287,17 +51,44 @@ class LoxClass(CallableExpression):
 
     def arity(self):
         pass 
-
+#this is runtime class so doesn't need parsing 
 class LoxInstance:
-    def __init__(self, lox_class, args):
+    def __init__(self, lox_class, args, parent_environment, resolver):
         self.lox_class = lox_class
         self.args = args
+        self.environment = Environment(parent_environment)
+        #fill the local hashmap with the name of the class function 
+        self.methods_properties = {}
+
+        for function_statement in lox_class.class_statement.function_statements:
+            
+            lox_function = LoxFunction(function_statement, instance_ref = self)
+            lox_function.register(self.environment)
+
+            self.methods_properties[function_statement.function_identifier_expression.expr.literal] = lox_function
+
+        for variable_statement in lox_class.class_statement.variable_statements:
+            self.methods_properties[variable_statement.lvalue.expr.literal] = Calculator(self.environment, resolver).calculate(variable_statement.rvalue)
+
+    def getMethodsProperties(self, prop):
+        #prop: simple string value ## wrong 
+        #prop: must be token to print line # when there's error
+        try:
+            ret_value = self.methods_properties[prop.literal]
+            return ret_value
+        except KeyError:
+            raise Exception(f"no property named {prop.literal} in instance of {self.lox_class.class_statement.class_identifier_expression.expr.literal} at line {prop.line}")
+
+    def setMethodsProperties(self, lvalue, rvalue):
+        self.methods_properties[lvalue] = rvalue
 
 ######################lox_fuction#######################
+
 class LoxFunction(CallableExpression):
     # params_list is list of tokens
-    def __init__(self, function_statement):
+    def __init__(self, function_statement, instance_ref = None):
         self.function_statement = function_statement
+        self.instance_ref = instance_ref if instance_ref else self
         #token.literal is variable name
         
         # print(f'inside lox function -> {self.environment.hashmap}, {executor.environment.hashmap}')
@@ -319,7 +110,7 @@ class LoxFunction(CallableExpression):
         
         ##### make self available in call environment, referring to itself
         # print('call ', TokenType.THIS.value, self)
-        call_environment.put(TokenType.THIS.value, self)
+        call_environment.put(TokenType.THIS.value, self.instance_ref)
         
         #####
 
@@ -344,9 +135,17 @@ class LoxFunction(CallableExpression):
 
 #################################################################
 class ClassStatement():
-    def __init__(self, class_identifier_expression, function_statements):
+    def __init__(self, class_identifier_expression, function_statements, variable_statements):
         self.class_identifier_expression = class_identifier_expression
         self.function_statements = function_statements
+        self.variable_statements = variable_statements
+
+        ##check if class constructor is defined, raise error if not 
+
+        class_name_token = self.class_identifier_expression.expr
+        if class_name_token.literal not in map(lambda function: function.function_identifier_expression.expr.literal, function_statements):
+            raise Exception(f"class constructor is not defined for class {class_name_token.literal} at line {class_name_token.line}")
+        #to do: check if the class constructor have return statement and raise error if it's present 
 
         self.name = "<class>"
 
@@ -457,6 +256,7 @@ class StatementExecutor:
     def visitClassStatement(self, class_statement):
         lox_class = LoxClass(class_statement)
         lox_class.register(self.environment)
+        # print('class registered')
 
 
     def visitReturnStatement(self, return_statement):
@@ -496,10 +296,12 @@ class StatementExecutor:
         rvalue = calc.calculate(statement.rvalue)
         # print("-->  ", self.resolver.variable_location)
         # print(statement.lvalue)
+        # print(f"assignment statement {ASTPrinter().print(statement.lvalue)} = {ASTPrinter().print(statement.rvalue)}")
+        
         try:
             index = self.resolver.variable_location[statement.lvalue]
             self.environment.putAt(lvalue, rvalue, index)
-        except KeyError:
+        except KeyError:#global variable
             self.environment.put(lvalue, rvalue)
 
         
@@ -586,6 +388,15 @@ class GroupingExpression:
     # def print(self):
     #   return f'({self.expression.print()})'
 
+class GetExpression:
+    #obj: LiteralExpression, prop_or_method: Token
+    def __init__(self, obj, prop_or_method):
+        self.obj = obj
+        self.prop_or_method = prop_or_method
+
+    def linkVisitor(self, visitor):
+        return visitor.visitGetExpression(self)
+
 class LiteralExpression:
     def __init__(self, expr):
         self.expr = expr
@@ -605,10 +416,18 @@ class Calculator(ExpressionVisitor):
     def calculate(self, expr):
         return expr.linkVisitor(self)
 
+    def visitGetExpression(self, get_expr):
+        lox_instance = self.calculate(get_expr.obj)
+        # print('visit get ', lox_instance)
+        if(isinstance(lox_instance, LoxInstance)):
+            return lox_instance.getMethodsProperties(get_expr.prop_or_method) # pass token as argument
+        raise Exception(f"no property {get_expr.prop_or_method.literal} on line {get_expr.prop_or_method.line}")
     #calculates function and class expression
     def visitCallableExpression(self, callable_expression):
         caller_expr = self.calculate(callable_expression.caller_expr)
-        # print("function expr ", caller_expr, " ", type(caller_expr), " ", isinstance(caller_expr, CallableExpression))
+        # print("callable expr ", caller_expr, " ", type(caller_expr), " ", isinstance(caller_expr, CallableExpression))
+        # print(self.environment)
+        # print("-------------")
         if (isinstance(caller_expr, CallableExpression)):
             ret = caller_expr.call(*[self.calculate(arg) for arg in callable_expression.args], resolver=self.resolver)
             return ret
@@ -673,7 +492,7 @@ class Calculator(ExpressionVisitor):
             try:
                 index = self.resolver.variable_location[literal_expression]
                 return self.environment.getAt(literal_expression.expr.literal, index)
-            except KeyError:
+            except KeyError as e:
                 return self.environment.get(literal_expression.expr.literal)
 
         return literal_expression.value
@@ -756,14 +575,21 @@ class Parser:
             left_brace = self.advance() # replace this with expect function to check whether there is left paren or not
             # print('left paren ', left_brace.toString())
             function_statements = [] #store the function definition
+            variable_statements = []
             while(self.peek().tipe != TokenType.RIGHT_BRACE):
                 # print('right paren searching')
                 if (self.peek().tipe == TokenType.EOF):
                     raise Exception(f"parenthesis is not terminated by matching parenthesis at line # {left_paren.line}")
 
-                if(function_statement:= self.functionStatement()):
+                if (function_statement:= self.functionStatement()):
                     if (self.peek().tipe == TokenType.SEMICOLON):
                         function_statements.append(function_statement)
+                        self.advance() # consume the semicolon
+                    else:
+                        raise Exception(f'->statement not terminated at line {self.peek().line}')
+                elif (variable_statement := self.variableStatement()):
+                    if (self.peek().tipe == TokenType.SEMICOLON):
+                        variable_statements.append(variable_statement)
                         self.advance() # consume the semicolon
                     else:
                         raise Exception(f'->statement not terminated at line {self.peek().line}')
@@ -772,14 +598,14 @@ class Parser:
 
             self.advance() # consume the right brace
 
-            return ClassStatement(LiteralExpression(class_identifier_token), function_statements)
+            return ClassStatement(LiteralExpression(class_identifier_token), function_statements, variable_statements)
 
 
                 
     def functionStatement(self):
         #the following conditional checks if it's normal function statement or anon function expression
         #if identifier is provided after `fun` its function statement 
-        if(self.peek().tipe == TokenType.FUN and self.peekNext().tipe == TokenType.IDENTIFIER):
+        if(self.peek().tipe == TokenType.FUN):
             function_token = self.advance() # consume the fun token 
             function_identifier_expression = LiteralExpression(self.advance())
             left_paren = self.advance()
@@ -970,9 +796,11 @@ class Parser:
             operator = self.advance() # advance the operator
             return UnaryExpression(operator, self.literalExpr())
         
-        return self.functionExpr()
+        return self.callerExpr()
 
-    def functionExpr(self):
+
+    #this function calculates function and object.methods and objects.properties
+    def callerExpr(self):
         #################################
         def argument_list():
             args = []
@@ -994,6 +822,11 @@ class Parser:
                 left_paren = self.advance()
                 args = argument_list()
                 caller_expr = FunctionExpression(caller_expr, args)
+            #new code for dot operator
+            elif(self.peek().tipe == TokenType.DOT):
+                dot = self.advance()
+                token_prop_or_method = self.advance()
+                caller_expr = GetExpression(caller_expr, prop_or_method=token_prop_or_method)
             else:
                 break
         
