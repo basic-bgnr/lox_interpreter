@@ -48,6 +48,10 @@ class Resolver:
         #first define it so that we can use it within itself
         self.define(class_statement.class_identifier_expression.expr.literal)
         self.resolve(class_statement.class_identifier_expression)
+
+        # self.beginScope()
+        # self.resolveAll(class_statement.function_statements)
+        # self.endScope()
         
 
     def visitBlockStatement(self, block_statement):

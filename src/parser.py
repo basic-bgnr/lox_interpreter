@@ -330,7 +330,10 @@ class StatementExecutor:
             index = self.resolver.variable_location[statement.lvalue]
             self.environment.putAt(lvalue, rvalue, index)
         except KeyError:
-            raise Exception(f"variable is not defined {statement.lvalue.expr.line}")
+            try:
+                self.environment.putIfExists(lvalue, rvalue) #put the value in current scope if theere is keyerror because instance variable is not resolved
+            except KeyError: # if the instance doesn't have the key raise error
+                raise Exception(f"variable '{lvalue}' is not defined at line : {statement.lvalue.expr.line}")
         
 
             #self.environment.put(lvalue, rvalue)
