@@ -1,0 +1,49 @@
+class Container { 
+    var key = "";
+    var value = 0;
+    
+    fun Container(key, value) {
+       this.key = key;
+       this.value = value;
+    };
+};
+
+
+class HashMap {
+    var internal_list = Array();
+    
+    fun HashMap(){
+    };
+    
+    fun put(key, value){
+      var index = 0;
+      var length = this.internal_list.len();
+      while index < length { 
+        var temp_container = this.internal_list.at(index);
+        if temp_container.key == key {
+             temp_container.value = value;
+	      return;
+        };
+        index += 1;
+      };
+      #key is not in internal list
+      var temp_container = Container(key, value);
+      this.internal_list.push(temp_container);
+    };
+    fun get(key) {
+      var index = 0;
+      var length = this.internal_list.len();
+      while index < length { 
+        var temp_container = this.internal_list.at(index);
+        if temp_container.key == key {
+           return temp_container.value;
+        };
+        index += 1;
+      };
+      print "key error";
+      exit(1);
+   };
+};
+
+    
+
