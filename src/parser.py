@@ -80,8 +80,25 @@ class LoxInstance:
             raise Exception(f"no property named {prop.literal} in instance of {self.lox_class.class_statement.class_identifier_expression.expr.literal} at line {prop.line}")
 
     def setMethodsProperties(self, prop, rvalue):
-        literal = prop.literal #get the property variable name 
-        self.methods_properties[literal] = rvalue
+        # literal = prop.literal #get the property variable name 
+        # self.methods_properties[literal] = rvalue
+
+              
+        # try:
+        #     lvalue = self.methods_properties[literal]
+        # except:
+        #     raise Exception(f"no property {literal} on instance at line {prop.line}")
+
+        lvalue = self.getMethodsProperties(prop)
+
+        if (not isinstance(lvalue, LoxFunction)):
+            self.methods_properties[prop.literal] = rvalue  
+        else:
+            raise Exception(f"instance methods cannot be reassigned, error at line {prop.line}")
+
+        # print('inside set method properties, "literal" ', literal)
+        # print(f"type of lvalue is LoxFunction : {isinstance(lvalue, LoxFunction)}")
+
 
 ######################lox_fuction#######################
 
@@ -312,13 +329,14 @@ class StatementExecutor:
 
         #check if the reassignment statement deals with object properties
         if (isinstance(statement.lvalue, GetExpression)):
+
             obj = statement.lvalue.expr
             prop = statement.lvalue.prop_or_method # this is token
             
             lvalue = calc.calculate(obj)
             rvalue = calc.calculate(statement.rvalue)
-
             lvalue.setMethodsProperties(prop, rvalue)
+
             return
 
         
@@ -502,6 +520,8 @@ class Calculator(ExpressionVisitor):
             return True
         elif (literal_expression.expr.tipe == TokenType.FALSE):
             return False
+        elif (literal_expression.expr.tipe == TokenType.NIL):
+            return None
         #to do : add case for identifier variable, function call ...etc
         elif (literal_expression.expr.tipe in [TokenType.IDENTIFIER, TokenType.THIS] ):
             # return self.environment.get(literal_expression.expr.literal)
@@ -862,7 +882,7 @@ class Parser:
     def literalExpr(self): # this needs to add support for bracketed expr or(group expression) as they have the same precedence as the literal number
         if (anon_function  := self.anonFunctionExpr()):
             return anon_function
-        if (self.peek().tipe in [TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER, TokenType.TRUE, TokenType.FALSE, TokenType.THIS]):
+        if (self.peek().tipe in [TokenType.STRING, TokenType.NUMBER, TokenType.IDENTIFIER, TokenType.TRUE, TokenType.FALSE, TokenType.THIS, TokenType.NIL]):
             literal_expr = self.advance()
             # print('literalExpr ', literal_expr.literal)
             return LiteralExpression(literal_expr)

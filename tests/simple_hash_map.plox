@@ -33,15 +33,16 @@ class HashMap {
     fun get(key) {
       var index = 0;
       var length = this.internal_list.len();
+      #print "interpreted lox, Key: " + str(key) + " index " + str(index);
       while index < length { 
         var temp_container = this.internal_list.at(index);
+        #print "temp cont key:( " + str(temp_container.key) + " )"  ;
         if temp_container.key == key {
            return temp_container.value;
         };
         index += 1;
       };
-      print "key error";
-      exit(1);
+      return None;
    };
 };
 

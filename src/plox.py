@@ -69,7 +69,7 @@ class Lox:
             try:
                 lox_interpreter.run(input())
             except Exception as e: 
-                print(e)
+                print(f" error : {e}")
     
     def run(self, source_code):
         #why this runs, its because of the lox interpreter environment, which remains in existence even after this function ends 

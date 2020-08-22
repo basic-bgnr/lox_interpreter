@@ -286,7 +286,7 @@ class TokenType(Enum):
   FUN = 'fun'
   FOR = 'for'
   IF = 'if'
-  NIL = 'nil'
+  NIL = 'None'
   OR  = 'or'
   PRINT = 'print'
   RETURN = 'return'
